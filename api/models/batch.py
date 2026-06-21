@@ -33,6 +33,7 @@ class AshWaterBatch(db.Model):
     ph_records = db.relationship('PhRecord', backref='batch', cascade='all, delete-orphan', lazy=True)
     filter_records = db.relationship('FilterRecord', backref='batch', cascade='all, delete-orphan', lazy=True)
     usage_records = db.relationship('UsageRecord', backref='batch', cascade='all, delete-orphan', lazy=True)
+    dyeing_records = db.relationship('DyeingRecord', backref='batch', cascade='all, delete-orphan', lazy=True)
 
     @property
     def applicable_processes(self):

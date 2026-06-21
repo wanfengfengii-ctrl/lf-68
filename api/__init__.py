@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from api.config import Config
 from api.models import db
-from api.routes import batches_bp, ph_records_bp, filter_records_bp, usage_records_bp
+from api.routes import batches_bp, ph_records_bp, filter_records_bp, usage_records_bp, dyeing_records_bp
 from api.utils import APIError, handle_api_error, handle_generic_error
 
 def create_app(config_class=Config):
@@ -17,6 +17,7 @@ def create_app(config_class=Config):
     app.register_blueprint(ph_records_bp, url_prefix='/api/batches')
     app.register_blueprint(filter_records_bp, url_prefix='/api/batches')
     app.register_blueprint(usage_records_bp, url_prefix='/api/batches')
+    app.register_blueprint(dyeing_records_bp, url_prefix='/api')
     
     @app.route('/api/health')
     def health_check():

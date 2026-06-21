@@ -40,8 +40,22 @@ def get_dyeing_record(record_id):
 
 @bp.route('/<batch_id>/dyeing-records', methods=['POST'])
 def add_dyeing_record_route(batch_id):
+    payload = request.get_json() or {}
     try:
-        data = DyeingRecordCreate(**request.get_json())
+        data = DyeingRecordCreate(**payload)
+    except Exception as e:
+        return handle_validation_error(e)
+    record = add_dyeing_record(batch_id, data)
+    return jsonify(record), 201
+
+@bp.route('/dyeing-records', methods=['POST'])
+def add_dyeing_record_body_route():
+    payload = request.get_json() or {}
+    batch_id = payload.get('batchId')
+    if not batch_id:
+        return jsonify({'error': '缺少 batchId', 'code': 400}), 400
+    try:
+        data = DyeingRecordCreate(**payload)
     except Exception as e:
         return handle_validation_error(e)
     record = add_dyeing_record(batch_id, data)
@@ -75,6 +89,7 @@ def trace_process():
     return jsonify(result)
 
 @bp.route('/dyeing-records/analyze/stability', methods=['GET'])
+@bp.route('/analysis/recipe-stability', methods=['GET'])
 def analyze_stability():
     fabric_type = request.args.get('fabricType')
     target_color = request.args.get('targetColor')
@@ -88,6 +103,7 @@ def analyze_stability():
     return jsonify(result)
 
 @bp.route('/dyeing-records/recommend', methods=['GET'])
+@bp.route('/analysis/recipe-recommendation', methods=['GET'])
 def get_recommendation():
     fabric_type = request.args.get('fabricType')
     target_color = request.args.get('targetColor')
@@ -107,6 +123,7 @@ def get_recommendation():
     return jsonify(result)
 
 @bp.route('/dyeing-records/analysis/comprehensive', methods=['GET'])
+@bp.route('/analysis/comprehensive', methods=['GET'])
 def comprehensive_analysis():
     dye_material = request.args.get('dyeMaterial')
     fabric_type = request.args.get('fabricType')
@@ -120,6 +137,7 @@ def comprehensive_analysis():
     return jsonify(result)
 
 @bp.route('/dyeing-records/analysis/by-raw-material', methods=['GET'])
+@bp.route('/analysis/source', methods=['GET'])
 def analysis_by_raw_material():
     dye_material = request.args.get('dyeMaterial')
     fabric_type = request.args.get('fabricType')
@@ -131,6 +149,7 @@ def analysis_by_raw_material():
     return jsonify(result)
 
 @bp.route('/dyeing-records/analysis/by-ph-range', methods=['GET'])
+@bp.route('/analysis/ph-range', methods=['GET'])
 def analysis_by_ph_range():
     dye_material = request.args.get('dyeMaterial')
     fabric_type = request.args.get('fabricType')
@@ -142,6 +161,7 @@ def analysis_by_ph_range():
     return jsonify(result)
 
 @bp.route('/dyeing-records/analysis/by-filter-count', methods=['GET'])
+@bp.route('/analysis/filter-count', methods=['GET'])
 def analysis_by_filter_count():
     dye_material = request.args.get('dyeMaterial')
     fabric_type = request.args.get('fabricType')
@@ -153,6 +173,7 @@ def analysis_by_filter_count():
     return jsonify(result)
 
 @bp.route('/dyeing-records/statistics/rework', methods=['GET'])
+@bp.route('/analysis/rework', methods=['GET'])
 def rework_statistics():
     dye_material = request.args.get('dyeMaterial')
     fabric_type = request.args.get('fabricType')

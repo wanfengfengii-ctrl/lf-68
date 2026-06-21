@@ -1,4 +1,5 @@
 from flask import jsonify
+from werkzeug.exceptions import HTTPException
 
 class APIError(Exception):
     def __init__(self, message, status_code=400, data=None):
@@ -44,6 +45,11 @@ def handle_validation_error(error):
     }), 400
 
 def handle_generic_error(error):
+    if isinstance(error, HTTPException):
+        return jsonify({
+            'error': error.description,
+            'code': error.code,
+        }), error.code
     return jsonify({
         'error': '服务器内部错误',
         'code': 500,
