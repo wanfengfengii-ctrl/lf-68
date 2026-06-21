@@ -14,47 +14,14 @@ def migrate_database():
         inspector = inspect(db.engine)
         tables = inspector.get_table_names()
         
-        if 'ash_water_batch' not in tables:
+        if 'ash_water_batches' not in tables:
             print('未找到表，正在创建所有表...')
             db.create_all()
             print('✓ 所有表创建完成')
             print('\n数据库初始化完成！')
             return
 
-        if 'dyeing_record' not in tables:
-            print('正在创建染色记录表...')
-            try:
-                with db.engine.connect() as conn:
-                    conn.execute(db.text('''
-                        CREATE TABLE dyeing_record (
-                            id VARCHAR(50) PRIMARY KEY,
-                            batch_id VARCHAR(50) NOT NULL,
-                            dyeing_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            fabric_type VARCHAR(100) NOT NULL,
-                            target_color VARCHAR(100) NOT NULL,
-                            dye_material VARCHAR(100) NOT NULL,
-                            mordant_method VARCHAR(100) NOT NULL,
-                            dye_concentration FLOAT NOT NULL,
-                            heating_time_minutes INTEGER NOT NULL,
-                            dyeing_count INTEGER NOT NULL DEFAULT 1,
-                            redye_count INTEGER NOT NULL DEFAULT 0,
-                            color_result VARCHAR(100),
-                            color_fastness INTEGER,
-                            process VARCHAR(50) NOT NULL,
-                            notes TEXT,
-                            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                            FOREIGN KEY (batch_id) REFERENCES ash_water_batch(id) ON DELETE CASCADE
-                        )
-                    '''))
-                    conn.commit()
-                print('✓ 染色记录表创建成功')
-            except Exception as e:
-                print(f'✗ 创建染色记录表失败: {e}')
-        else:
-            print('- 染色记录表已存在')
-
-        existing_columns = [col['name'] for col in inspector.get_columns('ash_water_batch')]
+        existing_columns = [col['name'] for col in inspector.get_columns('ash_water_batches')]
         print(f"现有字段: {existing_columns}")
 
         new_columns = [
@@ -74,7 +41,7 @@ def migrate_database():
                 try:
                     with db.engine.connect() as conn:
                         conn.execute(db.text(
-                            f'ALTER TABLE ash_water_batch ADD COLUMN {col_name} {col_def}'
+                            f'ALTER TABLE ash_water_batches ADD COLUMN {col_name} {col_def}'
                         ))
                         conn.commit()
                     print(f'✓ 添加字段: {col_name}')
@@ -82,32 +49,6 @@ def migrate_database():
                     print(f'✗ 添加字段 {col_name} 失败: {e}')
             else:
                 print(f'- 字段已存在: {col_name}')
-
-        dyeing_existing_columns = [col['name'] for col in inspector.get_columns('dyeing_record')]
-        print(f"\ndyeing_record 现有字段: {dyeing_existing_columns}")
-
-        dyeing_new_columns = [
-            ('is_success', 'INTEGER DEFAULT 1'),
-            ('is_rework', 'INTEGER DEFAULT 0'),
-            ('rework_reason', 'VARCHAR(200)'),
-            ('failure_reason', 'VARCHAR(200)'),
-            ('task_name', 'VARCHAR(100)'),
-            ('operator', 'VARCHAR(100)'),
-        ]
-
-        for col_name, col_def in dyeing_new_columns:
-            if col_name not in dyeing_existing_columns:
-                try:
-                    with db.engine.connect() as conn:
-                        conn.execute(db.text(
-                            f'ALTER TABLE dyeing_record ADD COLUMN {col_name} {col_def}'
-                        ))
-                        conn.commit()
-                    print(f'✓ 添加 dyeing_record 字段: {col_name}')
-                except Exception as e:
-                    print(f'✗ 添加 dyeing_record 字段 {col_name} 失败: {e}')
-            else:
-                print(f'- dyeing_record 字段已存在: {col_name}')
 
         print('\n数据库迁移完成！')
 

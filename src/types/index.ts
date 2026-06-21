@@ -2,57 +2,17 @@ export type BatchStatus = 'soaking' | 'filtering' | 'available' | 'not_applicabl
 
 export type DyeingProcess = 'scouring' | 'mordanting' | 'dyeing' | 'fixing';
 
+export type FabricType = 'cotton' | 'linen' | 'silk' | 'wool' | 'hemp';
+
+export type DyeMaterial = 'indigo' | 'madder' | 'safflower' | 'cork_tree' | 'sappanwood';
+
+export type MordantMethod = 'alum' | 'iron' | 'tannin' | 'soybean_milk' | 'none';
+
 export type PhTrend = 'rising' | 'falling' | 'stable';
 
-export type WarningType = 'consecutive_abnormal' | 'long_time_no_check' | 'ph_rising_rapidly' | 'ph_falling_rapidly' | 'usage_restricted' | 'excessive_filtering' | 'high_usage_frequency' | 'low_remaining_volume' | 'batch_expiring' | 'needs_recheck';
+export type WarningType = 'consecutive_abnormal' | 'long_time_no_check' | 'ph_rising_rapidly' | 'ph_falling_rapidly' | 'usage_restricted';
 
 export type WarningLevel = 'low' | 'medium' | 'high';
-
-export type StabilityLevel = 'excellent' | 'good' | 'fair' | 'poor' | 'unstable';
-
-export type MordantMethod =
-  | 'alum'
-  | 'iron'
-  | 'tannin'
-  | 'copper'
-  | 'tin'
-  | 'chrome'
-  | 'pre_mordant'
-  | 'meta_mordant'
-  | 'post_mordant'
-  | 'none';
-
-export type DyeMaterial =
-  | 'indigo'
-  | 'madder'
-  | 'safflower'
-  | 'turmeric'
-  | 'gardenia'
-  | 'sappanwood'
-  | 'pomegranate'
-  | 'chestnut'
-  | 'tea'
-  | 'onion_skin'
-  | 'grape_skin'
-  | 'blueberry'
-  | 'spinach'
-  | 'carrot'
-  | 'other';
-
-export type FabricType =
-  | 'cotton'
-  | 'linen'
-  | 'silk'
-  | 'wool'
-  | 'hemp'
-  | 'ramie'
-  | 'viscose'
-  | 'modal'
-  | 'tencel'
-  | 'bamboo'
-  | 'soy'
-  | 'blend'
-  | 'other';
 
 export interface WarningItem {
   type: WarningType;
@@ -127,6 +87,38 @@ export interface AnalysisResult {
   trendAnalysis: TrendAnalysis;
   warnings: WarningResult;
   recommendations: RecommendationResult;
+}
+
+export interface ProcessScoreItem {
+  process: DyeingProcess;
+  processName: string;
+  minPh: number;
+  maxPh: number;
+  score: number;
+  inRange: boolean;
+  reasons: string[];
+}
+
+export interface RecommendedBatchItem {
+  batch: AshWaterBatch;
+  finalScore: number;
+  remainingVolume: number;
+  remainingPercent: number;
+  ageDays: number;
+  warnings: WarningResult;
+  processScores: Record<DyeingProcess, ProcessScoreItem>;
+  processRecommendation?: ProcessScoreItem;
+}
+
+export interface BatchRecommendationResult {
+  process?: DyeingProcess;
+  processName?: string;
+  fabricType?: FabricType;
+  totalAvailable: number;
+  totalRecommended: number;
+  recommended: RecommendedBatchItem[];
+  notRecommended: RecommendedBatchItem[];
+  advice: string[];
 }
 
 export interface AshWaterBatch {
@@ -247,25 +239,35 @@ export interface WarningConfig {
   phRapidChangeHours: number;
 }
 
+export interface ApiConfig {
+  processNames: Record<DyeingProcess, string>;
+  statusNames: Record<BatchStatus, string>;
+  processPhRanges: Record<DyeingProcess, [number, number]>;
+  applicableRange: { min: number; max: number };
+  warningConfig: WarningConfig;
+  warningTypes: Record<WarningType, string>;
+  warningLevels: Record<WarningLevel, string>;
+  fabricTypes: Record<FabricType, string>;
+  dyeMaterials: Record<DyeMaterial, string>;
+  mordantMethods: Record<MordantMethod, string>;
+  stabilityLevels?: Record<string, string>;
+}
+
 export interface DyeingRecord {
   id: string;
   batchId: string;
-  batchNumber?: string;
-  rawMaterialSource?: string;
-  batchCurrentPh?: number | null;
-  batchFilterCount?: number;
   dyeingDate: string;
-  fabricType: FabricType;
+  fabricType: FabricType | string;
   targetColor: string;
-  dyeMaterial: DyeMaterial;
-  mordantMethod: MordantMethod;
+  dyeMaterial: DyeMaterial | string;
+  mordantMethod: MordantMethod | string;
   dyeConcentration: number;
   heatingTimeMinutes: number;
   dyeingCount: number;
   redyeCount: number;
   colorResult?: string;
   colorFastness?: number;
-  process: DyeingProcess;
+  process: DyeingProcess | string;
   notes?: string;
   isSuccess: boolean;
   isRework: boolean;
@@ -275,81 +277,235 @@ export interface DyeingRecord {
   operator?: string;
   createdAt: string;
   updatedAt: string;
+  batchNumber?: string;
+  rawMaterialSource?: string;
+  batchCurrentPh?: number;
+  batchFilterCount?: number;
 }
 
 export interface DyeingRecordCreateForm {
+  batchId: string;
   dyeingDate?: string;
-  fabricType: FabricType;
+  fabricType: string;
   targetColor: string;
-  dyeMaterial: DyeMaterial;
-  mordantMethod: MordantMethod;
+  dyeMaterial: string;
+  mordantMethod: string;
   dyeConcentration: number;
   heatingTimeMinutes: number;
-  dyeingCount: number;
-  redyeCount: number;
-  colorResult?: string;
-  colorFastness?: number;
-  process: DyeingProcess;
+  dyeingCount?: number;
+  process: string;
   notes?: string;
-  isSuccess?: boolean;
-  isRework?: boolean;
-  reworkReason?: string;
-  failureReason?: string;
   taskName?: string;
   operator?: string;
+  colorFastness?: number;
+  colorResult?: string;
+  isSuccess?: boolean;
+  failureReason?: string;
+  isRework?: boolean;
+  reworkReason?: string;
+  redyeCount?: number;
 }
 
 export interface DyeingRecordUpdateForm {
+  batchId?: string;
   dyeingDate?: string;
-  fabricType?: FabricType;
+  fabricType?: string;
   targetColor?: string;
-  dyeMaterial?: DyeMaterial;
-  mordantMethod?: MordantMethod;
+  dyeMaterial?: string;
+  mordantMethod?: string;
   dyeConcentration?: number;
   heatingTimeMinutes?: number;
-  dyeingCount?: number;
-  redyeCount?: number;
   colorResult?: string;
   colorFastness?: number;
-  process?: DyeingProcess;
+  process?: string;
   notes?: string;
   isSuccess?: boolean;
   isRework?: boolean;
   reworkReason?: string;
   failureReason?: string;
-  taskName?: string;
+  redyeCount?: number;
   operator?: string;
+  taskName?: string;
+  dyeingCount?: number;
+}
+
+export interface ScoreItem {
+  score: number;
+  grade?: string;
+  recordCount?: number;
+  rawMaterialSource?: string;
+  phRange?: string;
+  filterRange?: string;
+  type?: string;
+  title?: string;
+  content?: string | { score: number };
+}
+
+export interface AnalysisItem {
+  key: string;
+  label: string;
+  recordCount: number;
+  successRate: number;
+  avgColorFastness: number;
+  stdColorFastness?: number;
+  avgRedyeCount?: number;
+  avgPh?: number;
+  avgFilterCount?: number;
+  rawMaterialSource?: string;
+  phRange?: string;
+  filterRange?: string;
+  score: number;
+  grade?: string;
+  content?: string | { score: number };
+}
+
+export interface SourceAnalysisResult {
+  total: number;
+  items: AnalysisItem[];
+  groups: AnalysisItem[];
+}
+
+export interface PhRangeAnalysisResult {
+  total: number;
+  items: AnalysisItem[];
+  groups: AnalysisItem[];
+}
+
+export interface FilterCountAnalysisResult {
+  total: number;
+  items: AnalysisItem[];
+  groups: AnalysisItem[];
+}
+
+export interface RecommendationItem {
+  type: string;
+  title: string;
+  content: string | { score: number; } | any;
+  score?: number;
+}
+
+export interface OverviewStats {
+  totalRecords: number;
+  successRate: number;
+  avgColorFastness: number;
+  avgRedyeCount: number;
+  topMaterials: string[];
+}
+
+export interface AnalysisGroupResult {
+  groups: ScoreItem[];
+}
+
+export interface ComprehensiveAnalysisResult {
+  totalRecords: number;
+  successRate: number;
+  avgColorFastness: number;
+  topMaterials: string[];
+  bestPhRange?: string;
+  overview: OverviewStats;
+  recommendations?: RecommendationItem[];
+  byRawMaterial?: AnalysisGroupResult;
+  byPhRange?: AnalysisGroupResult;
+  items?: ScoreItem[];
+}
+
+export interface MaterialReworkItem {
+  material: string;
+  count: number;
+  total: number;
+  reworkCount: number;
+  failureCount: number;
+  reworkRate: number;
+  failureRate: number;
+  dyeMaterial?: string;
+}
+
+export interface ReworkStatisticsResult {
+  totalRework: number;
+  reworkRate: number;
+  reasons: Record<string, number>;
+  reworkReasons: any;
+  failureReasons: any;
+  byFabric: Record<string, number>;
+  byMaterial: MaterialReworkItem[];
+  byProcess: Record<string, number>;
+  totalRecords?: number;
+  reworkCount?: number;
+  failureCount?: number;
+  failureRate?: number;
+}
+
+export interface StabilityLevel {
+  level: string;
+  name: string;
+  minRecords: number;
+  consistencyThreshold: number;
 }
 
 export interface RecipeGroup {
-  batchId: string;
-  batchNumber: string;
-  dyeMaterial: DyeMaterial;
-  mordantMethod: MordantMethod;
-  dyeConcentration: number;
-  heatingTimeMinutes: number;
-  dyeingCount: number;
-  fabricType: FabricType;
-  targetColor: string;
-  recordCount: number;
-  avgColorFastness?: number;
-  stdColorFastness: number;
-  avgRedyeCount: number;
+  key: string;
+  label: string;
+  fabricType?: string;
+  targetColor?: string;
+  records: DyeingRecord[];
+  sampleRecords?: DyeingRecord[];
+  avgConcentration: number;
+  avgHeatingTime: number;
+  avgColorFastness: number;
   successRate: number;
-  stabilityScore: number;
-  stabilityLevel: StabilityLevel;
-  recommendation: string;
-  sampleRecords: DyeingRecord[];
+  recordCount: number;
+  stabilityLevel?: string;
+  recommendation?: string;
+  stabilityScore?: number;
+  score?: number;
+  reasons?: string[];
+  avgRedyeCount?: number;
+  batchNumber?: string;
+  dyeMaterial?: string;
+  mordantMethod?: string;
+  dyeConcentration?: number;
+  heatingTimeMinutes?: number;
+  dyeingCount?: number;
 }
 
 export interface StabilityAnalysisResult {
-  message?: string;
+  totalRecipes: number;
+  stableCount: number;
+  unstableCount: number;
+  avgRecordCountPerRecipe: number;
   totalRecords: number;
   analyzedGroups: number;
   recipeGroups: RecipeGroup[];
+  items: RecipeGroup[];
+  recommendations: string[];
+  message?: string;
 }
 
-export interface ProcessOptimization {
+export interface RecipeRecommendation {
+  recipeKey: string;
+  recipeLabel: string;
+  key?: string;
+  label?: string;
+  score: number;
+  stabilityScore?: number;
+  avgColorFastness: number;
+  avgRedyeCount?: number;
+  successRate: number;
+  recordCount: number;
+  stabilityLevel?: string;
+  reasons: string[];
+  records?: DyeingRecord[];
+  avgConcentration?: number;
+  avgHeatingTime?: number;
+  dyeConcentration?: number;
+  heatingTimeMinutes?: number;
+  dyeingCount?: number;
+  batchNumber?: string;
+  dyeMaterial?: string;
+  mordantMethod?: string;
+}
+
+export interface ProcessOptimizationItem {
   parameter: string;
   current: string;
   suggestion: string;
@@ -357,169 +513,19 @@ export interface ProcessOptimization {
 }
 
 export interface RecipeRecommendationResult {
+  targetFabric?: FabricType;
+  targetColor?: string;
+  targetProcess?: DyeingProcess;
   hasRecommendation: boolean;
+  bestRecipe?: RecipeRecommendation;
+  recommendations: RecipeRecommendation[];
+  alternatives: RecipeGroup[];
+  redyeAdvice: string[];
+  suggestions: string[];
+  processOptimization: ProcessOptimizationItem[];
   message?: string;
-  bestRecipe?: RecipeGroup;
-  alternatives?: RecipeGroup[];
-  suggestions?: string[];
-  redyeAdvice?: string;
-  processOptimization?: ProcessOptimization[];
-}
-
-export interface TraceGroup {
-  fabricType: FabricType;
-  targetColor: string;
-  process: DyeingProcess;
-  recordCount: number;
-  records: DyeingRecord[];
-}
-
-export interface BatchTraceSummary {
-  totalDyeingRecords: number;
-  successCount: number;
-  reworkCount: number;
-  failureCount: number;
-  successRate: number;
-  avgColorFastness: number | null;
-  stdColorFastness: number;
-  avgRedyeCount: number;
-  totalUsedVolume: number;
-  remainingVolume: number;
-  phRecordCount: number;
-  filterRecordCount: number;
-  usageRecordCount: number;
-}
-
-export interface BatchTraceStats {
-  dyeMaterials: Record<string, number>;
-  mordantMethods: Record<string, number>;
-  fabricTypes: Record<string, number>;
-}
-
-export interface BatchTraceChain {
-  batch: AshWaterBatch;
-  summary: BatchTraceSummary;
-  stats: BatchTraceStats;
-  phRecords: PhRecord[];
-  filterRecords: FilterRecord[];
-  usageRecords: UsageRecord[];
-  dyeingRecords: DyeingRecord[];
-}
-
-export interface TopItemStat {
-  item: string;
-  count: number;
-}
-
-export interface SourceAnalysisGroup {
-  rawMaterialSource: string;
-  recordCount: number;
-  successCount: number;
-  reworkCount: number;
-  failureCount: number;
-  successRate: number;
-  avgColorFastness: number | null;
-  stdColorFastness: number;
-  avgRedyeCount: number;
-  score: number;
-  grade: StabilityLevel;
-  topDyeMaterials: TopItemStat[];
-  topMordantMethods: TopItemStat[];
-}
-
-export interface SourceAnalysisResult {
-  totalRecords: number;
-  sourceCount: number;
-  groups: SourceAnalysisGroup[];
-}
-
-export interface PhRangeAnalysisGroup {
-  phRange: string;
-  phMin: number;
-  phMax: number;
-  avgPh: number;
-  recordCount: number;
-  successCount: number;
-  reworkCount: number;
-  failureCount: number;
-  successRate: number;
-  avgColorFastness: number | null;
-  stdColorFastness: number;
-  avgRedyeCount: number;
-  score: number;
-  grade: StabilityLevel;
-}
-
-export interface PhRangeAnalysisResult {
-  totalRecords: number;
-  rangeCount: number;
-  groups: PhRangeAnalysisGroup[];
-}
-
-export interface FilterCountAnalysisGroup {
-  filterRange: string;
-  filterMin: number;
-  filterMax: number;
-  avgFilterCount: number;
-  recordCount: number;
-  successCount: number;
-  reworkCount: number;
-  failureCount: number;
-  successRate: number;
-  avgColorFastness: number | null;
-  stdColorFastness: number;
-  avgRedyeCount: number;
-  score: number;
-  grade: StabilityLevel;
-}
-
-export interface FilterCountAnalysisResult {
-  totalRecords: number;
-  rangeCount: number;
-  groups: FilterCountAnalysisGroup[];
-}
-
-export interface AnalysisRecommendation {
-  type: string;
-  title: string;
-  content: string;
-  score: number;
-}
-
-export interface ComprehensiveAnalysisOverview {
-  totalRecords: number;
-  successCount: number;
-  reworkCount: number;
-  failureCount: number;
-  successRate: number;
-  avgColorFastness: number | null;
-  avgRedyeCount: number;
-}
-
-export interface ComprehensiveAnalysisResult {
-  overview: ComprehensiveAnalysisOverview;
-  byRawMaterial: SourceAnalysisResult;
-  byPhRange: PhRangeAnalysisResult;
-  byFilterCount: FilterCountAnalysisResult;
-  recommendations: AnalysisRecommendation[];
-}
-
-export interface ReworkStatisticsResult {
-  totalRecords: number;
-  reworkCount: number;
-  failureCount: number;
-  reworkRate: number;
-  failureRate: number;
-  reworkReasons: Record<string, number>;
-  failureReasons: Record<string, number>;
-  byMaterial: {
-    dyeMaterial: string;
-    total: number;
-    reworkCount: number;
-    failureCount: number;
-    reworkRate: number;
-    failureRate: number;
-  }[];
+  totalAvailable: number;
+  advice: string[];
 }
 
 export interface ApiError {
@@ -527,57 +533,4 @@ export interface ApiError {
   code: number;
   field?: string;
   rule?: string;
-}
-
-export interface ApiConfig {
-  processNames: Record<DyeingProcess, string>;
-  statusNames: Record<BatchStatus, string>;
-  processPhRanges: Record<DyeingProcess, [number, number]>;
-  applicableRange: { min: number; max: number };
-  warningConfig: WarningConfig;
-  warningTypes: Record<WarningType, string>;
-  warningLevels: Record<WarningLevel, string>;
-  mordantMethods: Record<MordantMethod, string>;
-  dyeMaterials: Record<DyeMaterial, string>;
-  fabricTypes: Record<FabricType, string>;
-  stabilityLevels: Record<StabilityLevel, string>;
-}
-
-export interface ProcessScoreDetail {
-  score: number;
-  inRange: boolean;
-  reasons: string[];
-  minPh: number;
-  maxPh: number;
-  processName: string;
-}
-
-export interface RecommendedBatchItem {
-  batch: AshWaterBatch;
-  remainingVolume: number;
-  remainingPercent: number;
-  totalUsed: number;
-  usageCount: number;
-  ageDays: number;
-  overallScore: number;
-  finalScore: number;
-  processScores: Record<string, ProcessScoreDetail>;
-  processRecommendation: ProcessScoreDetail | null;
-  trendAnalysis?: TrendAnalysis;
-  warnings: WarningResult;
-  recommendations: RecommendationResult;
-  isRecommended: boolean;
-}
-
-export interface BatchRecommendationResult {
-  process: DyeingProcess | null;
-  processName: string | null;
-  fabricType: FabricType | null;
-  targetPhRange: [number, number] | null;
-  recommended: RecommendedBatchItem[];
-  notRecommended: RecommendedBatchItem[];
-  totalAvailable: number;
-  totalRecommended: number;
-  advice: string[];
-  generatedAt: string;
 }

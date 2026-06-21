@@ -102,13 +102,13 @@ export default function DyeingRecords() {
     label: name,
   }));
 
-  const getFabricName = (type: FabricType) => config?.fabricTypes?.[type] || type;
-  const getDyeMaterialName = (material: DyeMaterial) =>
-    config?.dyeMaterials?.[material] || material;
-  const getMordantName = (method: MordantMethod) =>
-    config?.mordantMethods?.[method] || method;
-  const getProcessName = (process: DyeingProcess) =>
-    config?.processNames?.[process] || process;
+  const getFabricName = (type: string) => config?.fabricTypes?.[type as FabricType] || type;
+  const getDyeMaterialName = (material: string) =>
+    config?.dyeMaterials?.[material as DyeMaterial] || material;
+  const getMordantName = (method: string) =>
+    config?.mordantMethods?.[method as MordantMethod] || method;
+  const getProcessName = (process: string) =>
+    config?.processNames?.[process as DyeingProcess] || process;
 
   return (
     <div className="space-y-6">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, FlaskConical, Filter, Droplets, TrendingUp, Plus, Clock, Thermometer, Factory, Calendar, AlertTriangle, AlertCircle, TrendingDown, Minus, RefreshCw, CheckCircle, XCircle, Star, Palette, Award, Zap
+  ArrowLeft, FlaskConical, Filter, Droplets, TrendingUp, Plus, Clock, Thermometer, Factory, Calendar, AlertTriangle, AlertCircle, TrendingDown, Minus, RefreshCw, CheckCircle, XCircle, Star
 } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { apiClient, formatDateTime, formatDate, getPhColor } from '@/lib/api';
@@ -19,11 +19,9 @@ import type {
   WarningItem,
   ProcessRecommendation,
   RecommendationResult,
-  DyeingRecord,
-  BatchTraceChain,
 } from '@/types';
 
-type TabType = 'overview' | 'ph' | 'filter' | 'usage' | 'dyeing' | 'applicability' | 'warnings' | 'recommendations';
+type TabType = 'overview' | 'ph' | 'filter' | 'usage' | 'applicability' | 'warnings' | 'recommendations';
 
 export default function BatchDetail() {
   const { id } = useParams<{ id: string }>();
@@ -33,13 +31,9 @@ export default function BatchDetail() {
   const loading = useAppStore((state) => state.loading);
   const loadBatch = useAppStore((state) => state.loadBatch);
   const analyzeBatch = useAppStore((state) => state.analyzeBatch);
-  const batchTraceChain = useAppStore((state) => state.batchTraceChain);
-  const loadBatchTraceChain = useAppStore((state) => state.loadBatchTraceChain);
   const [phRecords, setPhRecords] = useState<PhRecord[]>([]);
   const [filterRecords, setFilterRecords] = useState<FilterRecord[]>([]);
   const [usageRecords, setUsageRecords] = useState<UsageRecord[]>([]);
-  const [dyeingRecords, setDyeingRecords] = useState<DyeingRecord[]>([]);
-  const traceChain = batchTraceChain;
   const [applicability, setApplicability] = useState<ApplicabilityInfo | null>(null);
   const [recommendations, setRecommendations] = useState<RecommendationResult | null>(null);
   const [warnings, setWarnings] = useState<WarningItem[]>([]);
@@ -48,7 +42,6 @@ export default function BatchDetail() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showUsageModal, setShowUsageModal] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [loadingTrace, setLoadingTrace] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -91,33 +84,6 @@ export default function BatchDetail() {
     }
   };
 
-  const loadTraceChain = async (batchId: string) => {
-    if (batchTraceChain && batchTraceChain.batch.id === batchId) return;
-    setLoadingTrace(true);
-    try {
-      await loadBatchTraceChain(batchId);
-    } catch (err) {
-      console.error('加载追溯链失败:', err);
-    } finally {
-      setLoadingTrace(false);
-    }
-  };
-
-  useEffect(() => {
-    if (id && activeTab === 'dyeing') {
-      loadTraceChain(id);
-    }
-  }, [id, activeTab]);
-
-  const getDyeMaterialName = (material: string) =>
-    config?.dyeMaterials?.[material as keyof typeof config.dyeMaterials] || material;
-
-  const getMordantName = (method: string) =>
-    config?.mordantMethods?.[method as keyof typeof config.mordantMethods] || method;
-
-  const getFabricName = (type: string) =>
-    config?.fabricTypes?.[type as keyof typeof config.fabricTypes] || type;
-
   if (!id) return null;
 
   const tabs: { key: TabType; label: string; icon: any; badge?: number }[] = [
@@ -127,32 +93,22 @@ export default function BatchDetail() {
     { key: 'ph', label: 'PH检测', icon: TrendingUp },
     { key: 'filter', label: '过滤记录', icon: Filter },
     { key: 'usage', label: '使用记录', icon: Droplets },
-    { key: 'dyeing', label: '染色追溯', icon: Palette, badge: traceChain?.summary.totalDyeingRecords },
     { key: 'applicability', label: '工序适配', icon: Factory },
   ];
 
   const handlePhRecordAdded = () => {
     setShowPhModal(false);
-    if (id) {
-      loadBatch(id);
-      loadRecords(id);
-    }
+    loadRecords(id);
   };
 
   const handleFilterRecordAdded = () => {
     setShowFilterModal(false);
-    if (id) {
-      loadBatch(id);
-      loadRecords(id);
-    }
+    loadRecords(id);
   };
 
   const handleUsageRecordAdded = () => {
     setShowUsageModal(false);
-    if (id) {
-      loadBatch(id);
-      loadRecords(id);
-    }
+    loadRecords(id);
   };
 
   if (loading && !selectedBatch) {
@@ -1038,262 +994,6 @@ export default function BatchDetail() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'dyeing' && (
-          <div className="space-y-6">
-            {loadingTrace ? (
-              <div className="text-center py-12 text-earth-500">
-                <div className="animate-spin w-8 h-8 border-2 border-moss-600 border-t-transparent rounded-full mx-auto mb-4" />
-                <p>加载追溯链中...</p>
-              </div>
-            ) : !traceChain ? (
-              <div className="text-center py-12 text-earth-500">
-                <Palette className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">暂无追溯数据</p>
-                <p className="text-sm mt-1">该批次尚未参与染色任务</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="card">
-                    <div className="card-body text-center">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2">
-                        <Palette className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-earth-900">
-                        {traceChain.summary.totalDyeingRecords}
-                      </p>
-                      <p className="text-sm text-earth-500">染色任务</p>
-                    </div>
-                  </div>
-                  <div className="card">
-                    <div className="card-body text-center">
-                      <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-green-600">
-                        {traceChain.summary.successRate}%
-                      </p>
-                      <p className="text-sm text-earth-500">成功率</p>
-                    </div>
-                  </div>
-                  <div className="card">
-                    <div className="card-body text-center">
-                      <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-2">
-                        <Award className="w-5 h-5 text-amber-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-earth-900">
-                        {traceChain.summary.avgColorFastness ?? '-'}
-                      </p>
-                      <p className="text-sm text-earth-500">平均色牢度</p>
-                    </div>
-                  </div>
-                  <div className="card">
-                    <div className="card-body text-center">
-                      <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-2">
-                        <RefreshCw className="w-5 h-5 text-red-600" />
-                      </div>
-                      <p className="text-2xl font-bold text-earth-900">
-                        {traceChain.summary.reworkCount}
-                      </p>
-                      <p className="text-sm text-earth-500">返工次数</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="card">
-                    <div className="card-header">
-                      <h3 className="font-medium text-earth-900">染材分布</h3>
-                    </div>
-                    <div className="card-body">
-                      {Object.keys(traceChain.stats.dyeMaterials).length === 0 ? (
-                        <p className="text-earth-500 text-sm">暂无数据</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {Object.entries(traceChain.stats.dyeMaterials).map(([material, count]) => (
-                            <div key={material} className="flex items-center justify-between text-sm">
-                              <span className="text-earth-700">{getDyeMaterialName(material)}</span>
-                              <span className="font-medium text-earth-900">{count}次</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="card">
-                    <div className="card-header">
-                      <h3 className="font-medium text-earth-900">媒染方式</h3>
-                    </div>
-                    <div className="card-body">
-                      {Object.keys(traceChain.stats.mordantMethods).length === 0 ? (
-                        <p className="text-earth-500 text-sm">暂无数据</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {Object.entries(traceChain.stats.mordantMethods).map(([method, count]) => (
-                            <div key={method} className="flex items-center justify-between text-sm">
-                              <span className="text-earth-700">{getMordantName(method)}</span>
-                              <span className="font-medium text-earth-900">{count}次</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="card">
-                    <div className="card-header">
-                      <h3 className="font-medium text-earth-900">布料类型</h3>
-                    </div>
-                    <div className="card-body">
-                      {Object.keys(traceChain.stats.fabricTypes).length === 0 ? (
-                        <p className="text-earth-500 text-sm">暂无数据</p>
-                      ) : (
-                        <div className="space-y-2">
-                          {Object.entries(traceChain.stats.fabricTypes).map(([fabric, count]) => (
-                            <div key={fabric} className="flex items-center justify-between text-sm">
-                              <span className="text-earth-700">{getFabricName(fabric)}</span>
-                              <span className="font-medium text-earth-900">{count}次</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card">
-                  <div className="card-header flex items-center justify-between">
-                    <h3 className="font-serif font-bold text-lg">染色记录列表</h3>
-                    <span className="text-sm text-earth-500">
-                      共 {traceChain.dyeingRecords.length} 条记录
-                    </span>
-                  </div>
-                  <div className="card-body">
-                    {traceChain.dyeingRecords.length === 0 ? (
-                      <p className="text-earth-500 text-center py-8">暂无染色记录</p>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-earth-50">
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">日期</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">任务名称</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">布料</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">目标颜色</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">染材</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">媒染</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">成色</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">色牢度</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">状态</th>
-                              <th className="text-left px-4 py-3 text-sm font-medium text-earth-700">操作人</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-earth-100">
-                            {traceChain.dyeingRecords.map((record) => (
-                              <tr key={record.id} className="hover:bg-earth-50 transition-colors">
-                                <td className="px-4 py-3 text-sm text-earth-900">
-                                  {formatDateTime(record.dyeingDate)}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-900 font-medium">
-                                  {record.taskName || '-'}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-900">
-                                  {getFabricName(record.fabricType)}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-900">
-                                  {record.targetColor}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-900">
-                                  {getDyeMaterialName(record.dyeMaterial)}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-900">
-                                  {getMordantName(record.mordantMethod)}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-900">
-                                  {record.colorResult || '-'}
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  {record.colorFastness ? (
-                                    <span className="font-medium text-moss-600">
-                                      {record.colorFastness}级
-                                    </span>
-                                  ) : (
-                                    '-'
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  {record.isRework ? (
-                                    <span className="badge bg-amber-100 text-amber-700">返工</span>
-                                  ) : record.isSuccess ? (
-                                    <span className="badge bg-green-100 text-green-700">成功</span>
-                                  ) : (
-                                    <span className="badge bg-red-100 text-red-700">失败</span>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-earth-600">
-                                  {record.operator || '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {traceChain.summary.failureCount > 0 && (
-                  <div className="card border-red-200 bg-red-50/30">
-                    <div className="card-header">
-                      <h3 className="font-medium text-red-800 flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" />
-                        失败与返工原因分析
-                      </h3>
-                    </div>
-                    <div className="card-body">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm font-medium text-earth-700 mb-2">返工原因</p>
-                          {traceChain.dyeingRecords.filter(r => r.isRework && r.reworkReason).length === 0 ? (
-                            <p className="text-sm text-earth-500">暂无返工原因记录</p>
-                          ) : (
-                            <ul className="text-sm text-earth-600 space-y-1">
-                              {traceChain.dyeingRecords
-                                .filter(r => r.isRework && r.reworkReason)
-                                .map((r, idx) => (
-                                  <li key={idx} className="flex items-start gap-2">
-                                    <span className="text-amber-500">•</span>
-                                    {r.reworkReason}
-                                  </li>
-                                ))}
-                            </ul>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-earth-700 mb-2">失败原因</p>
-                          {traceChain.dyeingRecords.filter(r => !r.isSuccess && r.failureReason).length === 0 ? (
-                            <p className="text-sm text-earth-500">暂无失败原因记录</p>
-                          ) : (
-                            <ul className="text-sm text-earth-600 space-y-1">
-                              {traceChain.dyeingRecords
-                                .filter(r => !r.isSuccess && r.failureReason)
-                                .map((r, idx) => (
-                                  <li key={idx} className="flex items-start gap-2">
-                                    <span className="text-red-500">•</span>
-                                    {r.failureReason}
-                                  </li>
-                                ))}
-                            </ul>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
             )}
           </div>
         )}

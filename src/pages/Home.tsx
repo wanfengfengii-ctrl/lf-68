@@ -240,6 +240,16 @@ export default function Home() {
         </div>
       )}
 
+      {warningStats.total > 0 && !showWarningPanel && (
+        <button
+          onClick={() => setShowWarningPanel(true)}
+          className="fixed bottom-6 right-6 z-40 bg-orange-500 hover:bg-orange-600 text-white shadow-lg rounded-full px-5 py-3 flex items-center gap-2 animate-pulse-slow"
+        >
+          <AlertTriangle className="w-5 h-5" />
+          <span className="font-medium">预警 {warningStats.total}</span>
+        </button>
+      )}
+
       <div className="card">
         <div className="card-header flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <h2 className="text-xl font-serif font-bold">批次列表</h2>

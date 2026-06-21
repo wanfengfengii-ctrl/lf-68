@@ -13,22 +13,19 @@ import type {
   ApiError,
   AnalysisResult,
   AllWarningsResult,
-  DyeingRecord,
-  DyeingRecordCreateForm,
-  DyeingRecordUpdateForm,
-  StabilityAnalysisResult,
-  RecipeRecommendationResult,
-  TraceGroup,
   BatchRecommendationResult,
   DyeingProcess,
   FabricType,
-  BatchTraceChain,
-  ComprehensiveAnalysisResult,
+  DyeingRecord,
+  DyeingRecordCreateForm,
+  DyeingRecordUpdateForm,
   SourceAnalysisResult,
   PhRangeAnalysisResult,
   FilterCountAnalysisResult,
+  ComprehensiveAnalysisResult,
   ReworkStatisticsResult,
-  DyeMaterial,
+  StabilityAnalysisResult,
+  RecipeRecommendationResult,
 } from '@/types';
 
 const api = axios.create({
@@ -70,10 +67,8 @@ export const apiClient = {
       api.get<AllWarningsResult>('/batches/warnings'),
     refreshWarnings: () =>
       api.post<AllWarningsResult>('/batches/warnings/refresh'),
-    recommend: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) =>
-      api.get<BatchRecommendationResult>('/batches/recommend', { params }),
-    trace: (id: string) =>
-      api.get<BatchTraceChain>(`/batches/${id}/trace`),
+    recommendation: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) =>
+      api.get<BatchRecommendationResult>('/batches/recommendation', { params }),
   },
 
   phRecords: {
@@ -95,30 +90,24 @@ export const apiClient = {
   },
 
   dyeingRecords: {
-    list: (params?: { batchId?: string; fabricType?: string; targetColor?: string; process?: string }) =>
-      api.get<DyeingRecord[]>('/batches/dyeing-records', { params }),
-    get: (id: string) => api.get<DyeingRecord>(`/batches/dyeing-records/${id}`),
-    create: (batchId: string, data: DyeingRecordCreateForm) =>
-      api.post<DyeingRecord>(`/batches/${batchId}/dyeing-records`, data),
+    list: (batchId?: string) => api.get<DyeingRecord[]>('/dyeing-records', { params: { batchId } }),
+    get: (id: string) => api.get<DyeingRecord>(`/dyeing-records/${id}`),
+    create: (data: DyeingRecordCreateForm) => api.post<DyeingRecord>('/dyeing-records', data),
     update: (id: string, data: DyeingRecordUpdateForm) =>
-      api.put<DyeingRecord>(`/batches/dyeing-records/${id}`, data),
-    delete: (id: string) => api.delete(`/batches/dyeing-records/${id}`),
-    trace: (params?: { fabricType?: string; targetColor?: string; process?: string }) =>
-      api.get<TraceGroup[]>('/batches/dyeing-records/trace', { params }),
-    analyzeStability: (params?: { fabricType?: string; targetColor?: string; process?: string }) =>
-      api.get<StabilityAnalysisResult>('/batches/dyeing-records/analyze/stability', { params }),
-    recommend: (params: { fabricType: string; targetColor: string; process?: string }) =>
-      api.get<RecipeRecommendationResult>('/batches/dyeing-records/recommend', { params }),
-    comprehensiveAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType; process?: DyeingProcess }) =>
-      api.get<ComprehensiveAnalysisResult>('/batches/dyeing-records/analysis/comprehensive', { params }),
-    analyzeByRawMaterial: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
-      api.get<SourceAnalysisResult>('/batches/dyeing-records/analysis/by-raw-material', { params }),
-    analyzeByPhRange: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
-      api.get<PhRangeAnalysisResult>('/batches/dyeing-records/analysis/by-ph-range', { params }),
-    analyzeByFilterCount: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
-      api.get<FilterCountAnalysisResult>('/batches/dyeing-records/analysis/by-filter-count', { params }),
-    reworkStatistics: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
-      api.get<ReworkStatisticsResult>('/batches/dyeing-records/statistics/rework', { params }),
+      api.put<DyeingRecord>(`/dyeing-records/${id}`, data),
+    delete: (id: string) => api.delete(`/dyeing-records/${id}`),
+  },
+
+  analysis: {
+    comprehensive: (params?: any) => api.get<ComprehensiveAnalysisResult>('/analysis/comprehensive', { params }),
+    source: (params?: any) => api.get<SourceAnalysisResult>('/analysis/source', { params }),
+    phRange: (params?: any) => api.get<PhRangeAnalysisResult>('/analysis/ph-range', { params }),
+    filterCount: (params?: any) => api.get<FilterCountAnalysisResult>('/analysis/filter-count', { params }),
+    rework: (params?: any) => api.get<ReworkStatisticsResult>('/analysis/rework', { params }),
+    recipeStability: (params?: { minRecords?: number; fabricType?: string }) =>
+      api.get<StabilityAnalysisResult>('/analysis/recipe-stability', { params }),
+    recipeRecommendation: (params?: { fabricType?: string; targetColor?: string; process?: string }) =>
+      api.get<RecipeRecommendationResult>('/analysis/recipe-recommendation', { params }),
   },
 };
 
@@ -164,7 +153,7 @@ export const formatDate = (isoString: string): string => {
   });
 };
 
-export const formatNumber = (value: number | null | undefined, decimals: number = 1): string => {
-  if (value === null || value === undefined) return '-';
-  return Number(value).toFixed(decimals);
+export const formatNumber = (num: number | null | undefined, digits = 1): string => {
+  if (num === null || num === undefined) return '-';
+  return num.toFixed(digits);
 };

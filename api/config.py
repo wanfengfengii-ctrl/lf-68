@@ -47,12 +47,6 @@ class Config:
         'ph_stable_threshold': 0.3,
         'ph_rapid_change_threshold': 1.0,
         'ph_rapid_change_hours': 24,
-        'excessive_filter_count': 5,
-        'high_usage_frequency_days': 7,
-        'high_usage_frequency_count': 5,
-        'low_remaining_volume_percent': 10,
-        'very_low_remaining_volume_percent': 5,
-        'max_batch_age_days': 30,
     }
 
     WARNING_TYPES = {
@@ -61,11 +55,6 @@ class Config:
         'ph_rising_rapidly': 'PH快速上升',
         'ph_falling_rapidly': 'PH快速下降',
         'usage_restricted': '限制使用',
-        'excessive_filtering': '过滤次数过多',
-        'high_usage_frequency': '使用频率过高',
-        'low_remaining_volume': '剩余量不足',
-        'batch_expiring': '批次即将过期',
-        'needs_recheck': '需要复检',
     }
 
     WARNING_LEVELS = {
@@ -74,57 +63,42 @@ class Config:
         'high': '严重',
     }
 
-    MORDANT_METHODS = {
-        'alum': '明矾媒染',
-        'iron': '铁媒染',
-        'tannin': '单宁媒染',
-        'copper': '铜媒染',
-        'tin': '锡媒染',
-        'chrome': '铬媒染',
-        'pre_mordant': '预媒染',
-        'meta_mordant': '同媒染',
-        'post_mordant': '后媒染',
-        'none': '无媒染',
+    FABRIC_TYPES = {
+        'cotton': '棉',
+        'linen': '亚麻',
+        'silk': '丝绸',
+        'wool': '羊毛',
+        'hemp': '麻',
     }
 
     DYE_MATERIALS = {
         'indigo': '靛蓝',
         'madder': '茜草',
         'safflower': '红花',
-        'turmeric': '姜黄',
-        'gardenia': '栀子',
+        'cork_tree': '黄檗',
         'sappanwood': '苏木',
-        'pomegranate': '石榴皮',
-        'chestnut': '板栗壳',
-        'tea': '茶叶',
-        'onion_skin': '洋葱皮',
-        'grape_skin': '葡萄皮',
-        'blueberry': '蓝莓',
-        'spinach': '菠菜',
-        'carrot': '胡萝卜',
-        'other': '其他',
     }
 
-    FABRIC_TYPES = {
-        'cotton': '棉布',
-        'linen': '亚麻',
-        'silk': '丝绸',
-        'wool': '羊毛',
-        'hemp': '大麻',
-        'ramie': '苎麻',
-        'viscose': '粘胶纤维',
-        'modal': '莫代尔',
-        'tencel': '天丝',
-        'bamboo': '竹纤维',
-        'soy': '大豆纤维',
-        'blend': '混纺',
-        'other': '其他',
+    MORDANT_METHODS = {
+        'alum': '明矾',
+        'iron': '铁媒',
+        'tannin': '单宁',
+        'soybean_milk': '豆浆',
+        'none': '无媒染',
     }
 
-    STABILITY_LEVELS = {
-        'excellent': '优秀',
-        'good': '良好',
-        'fair': '一般',
-        'poor': '较差',
-        'unstable': '不稳定',
+    FABRIC_PROCESS_BONUS = {
+        'cotton': {'scouring': 1.0, 'mordanting': 1.0, 'dyeing': 1.0, 'fixing': 1.0},
+        'linen': {'scouring': 1.2, 'mordanting': 1.1, 'dyeing': 0.9, 'fixing': 1.0},
+        'silk': {'scouring': 0.8, 'mordanting': 1.2, 'dyeing': 1.1, 'fixing': 1.2},
+        'wool': {'scouring': 0.7, 'mordanting': 1.3, 'dyeing': 1.2, 'fixing': 1.3},
+        'hemp': {'scouring': 1.15, 'mordanting': 1.05, 'dyeing': 0.95, 'fixing': 1.0},
+    }
+
+    FABRIC_PH_ADJUST = {
+        'cotton': {'offset': 0.0, 'scale': 1.0},
+        'linen': {'offset': 0.5, 'scale': 1.1},
+        'silk': {'offset': -1.0, 'scale': 0.9},
+        'wool': {'offset': -1.5, 'scale': 0.85},
+        'hemp': {'offset': 0.3, 'scale': 1.05},
     }

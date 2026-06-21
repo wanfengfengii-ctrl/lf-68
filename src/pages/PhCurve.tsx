@@ -116,15 +116,47 @@ export default function PhCurve() {
   const trendAnalysis = analysis?.trendAnalysis;
   const warnings = analysis?.warnings?.list || [];
 
+  const hasWarningAtRecord = (record: PhRecord, idx: number): boolean => {
+    if (warnings.length === 0) return false;
+    const warningTypes = analysis?.warnings?.warningTypes || [];
+
+    if (warningTypes.includes('consecutive_abnormal')) {
+      const consecutiveCount =
+        warnings.find((w) => w.type === 'consecutive_abnormal')?.count || 3;
+      const startIdx = phRecords.length - consecutiveCount;
+      if (idx >= startIdx && startIdx >= 0) {
+        if (record.phValue < 8.5 || record.phValue > 12.5) {
+          return true;
+        }
+      }
+    }
+
+    if (warningTypes.includes('ph_rising_rapidly') || warningTypes.includes('ph_falling_rapidly')) {
+      const rapidCount = Math.min(5, phRecords.length);
+      if (idx >= phRecords.length - rapidCount) {
+        return true;
+      }
+    }
+
+    for (const w of warnings) {
+      if (!w.timestamp) continue;
+      const wTime = new Date(w.timestamp).getTime();
+      const rTime = new Date(record.measuredAt).getTime();
+      if (Math.abs(wTime - rTime) < 1000 * 60 * 60 * 24) {
+        if (w.type === 'consecutive_abnormal' && (record.phValue < 8.5 || record.phValue > 12.5)) {
+          return true;
+        }
+        if (w.type.includes('rapidly')) return true;
+      }
+    }
+    return false;
+  };
+
   const labels = phRecords.map((record) => formatDateTime(record.measuredAt));
   const phValues = phRecords.map((record) => record.phValue);
 
   const pointStyles = phRecords.map((record, idx) => {
-    const hasWarning = warnings.some((w) => {
-      const wTime = new Date(w.timestamp || 0).getTime();
-      const rTime = new Date(record.measuredAt).getTime();
-      return Math.abs(wTime - rTime) < 1000 * 60 * 60 * 6;
-    });
+    const hasWarning = hasWarningAtRecord(record, idx);
     if (hasWarning) return { style: 'triangle', color: '#ef4444' };
     if (record.phValue >= 8.5 && record.phValue <= 12.5) return { style: 'circle', color: '#22c55e' };
     return { style: 'circle', color: '#ef4444' };
@@ -236,13 +268,19 @@ export default function PhCurve() {
             const idx = context.dataIndex;
             const record = phRecords[idx];
             if (!record) return '';
-            const nearbyWarnings = warnings.filter((w) => {
-              const wTime = new Date(w.timestamp || 0).getTime();
-              const rTime = new Date(record.measuredAt).getTime();
-              return Math.abs(wTime - rTime) < 1000 * 60 * 60 * 6;
-            });
-            if (nearbyWarnings.length > 0) {
-              return nearbyWarnings.map((w) => `⚠ ${w.typeName}: ${w.message}`);
+            const recordHasWarning = hasWarningAtRecord(record, idx);
+            if (recordHasWarning) {
+              const matchedWarnings = warnings.filter((w) => {
+                if (w.type === 'consecutive_abnormal') {
+                  return record.phValue < 8.5 || record.phValue > 12.5;
+                }
+                if (w.type.includes('rapidly')) {
+                  const rapidCount = Math.min(5, phRecords.length);
+                  return idx >= phRecords.length - rapidCount;
+                }
+                return true;
+              });
+              return matchedWarnings.map((w) => `⚠ ${w.typeName}: ${w.message}`);
             }
             return '';
           },
@@ -720,11 +758,7 @@ export default function PhCurve() {
                 </thead>
                 <tbody>
                   {phRecords.map((record, idx) => {
-                    const hasWarning = warnings.some((w) => {
-                      const wTime = new Date(w.timestamp || 0).getTime();
-                      const rTime = new Date(record.measuredAt).getTime();
-                      return Math.abs(wTime - rTime) < 1000 * 60 * 60 * 6;
-                    });
+                    const hasWarning = hasWarningAtRecord(record, idx);
                     return (
                       <tr key={record.id}>
                         <td className="font-medium text-earth-500">#{idx + 1}</td>

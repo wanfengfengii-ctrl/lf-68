@@ -1,26 +1,11 @@
 import { create } from 'zustand';
 import type {
-  AshWaterBatch,
-  ApiConfig,
-  ApiError,
-  AllWarningsResult,
-  AnalysisResult,
-  DyeingRecord,
-  DyeingRecordCreateForm,
-  DyeingRecordUpdateForm,
-  StabilityAnalysisResult,
-  RecipeRecommendationResult,
-  TraceGroup,
-  BatchRecommendationResult,
-  DyeingProcess,
-  FabricType,
-  BatchTraceChain,
-  ComprehensiveAnalysisResult,
-  ReworkStatisticsResult,
-  SourceAnalysisResult,
-  PhRangeAnalysisResult,
-  FilterCountAnalysisResult,
-  DyeMaterial,
+  AshWaterBatch, ApiConfig, ApiError, AllWarningsResult, AnalysisResult,
+  BatchRecommendationResult, DyeingProcess, FabricType,
+  DyeingRecord, DyeingRecordCreateForm, DyeingRecordUpdateForm,
+  SourceAnalysisResult, PhRangeAnalysisResult, FilterCountAnalysisResult,
+  ComprehensiveAnalysisResult, ReworkStatisticsResult,
+  StabilityAnalysisResult, RecipeRecommendationResult
 } from '@/types';
 import { apiClient } from '@/lib/api';
 
@@ -31,17 +16,15 @@ interface AppState {
   loading: boolean;
   error: ApiError | null;
   warnings: AllWarningsResult | null;
-  dyeingRecords: DyeingRecord[];
-  stabilityAnalysis: StabilityAnalysisResult | null;
-  recipeRecommendation: RecipeRecommendationResult | null;
-  traceGroups: TraceGroup[];
   batchRecommendation: BatchRecommendationResult | null;
-  batchTraceChain: BatchTraceChain | null;
+  dyeingRecords: DyeingRecord[];
   comprehensiveAnalysis: ComprehensiveAnalysisResult | null;
-  reworkStatistics: ReworkStatisticsResult | null;
   sourceAnalysis: SourceAnalysisResult | null;
   phRangeAnalysis: PhRangeAnalysisResult | null;
   filterCountAnalysis: FilterCountAnalysisResult | null;
+  reworkStatistics: ReworkStatisticsResult | null;
+  stabilityAnalysis: StabilityAnalysisResult | null;
+  recipeRecommendation: RecipeRecommendationResult | null;
 
   loadConfig: () => Promise<void>;
   loadBatches: (status?: string, search?: string, hasWarning?: boolean) => Promise<void>;
@@ -56,25 +39,20 @@ interface AppState {
   loadWarnings: () => Promise<void>;
   refreshWarnings: () => Promise<void>;
   analyzeBatch: (batchId: string) => Promise<AnalysisResult>;
-  clearError: () => void;
-
-  loadDyeingRecords: (params?: { batchId?: string; fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
-  addDyeingRecord: (batchId: string, data: DyeingRecordCreateForm) => Promise<void>;
-  updateDyeingRecord: (id: string, data: DyeingRecordUpdateForm) => Promise<void>;
-  deleteDyeingRecord: (id: string) => Promise<void>;
-  analyzeRecipeStability: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
-  getRecipeRecommendation: (params: { fabricType: string; targetColor: string; process?: string }) => Promise<void>;
-  traceDyeingProcess: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
   getBatchRecommendation: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) => Promise<void>;
   clearBatchRecommendation: () => void;
-
-  loadBatchTraceChain: (batchId: string) => Promise<void>;
-  clearBatchTraceChain: () => void;
-  loadComprehensiveAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType; process?: DyeingProcess }) => Promise<void>;
-  loadSourceAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
-  loadPhRangeAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
-  loadFilterCountAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
-  loadReworkStatistics: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
+  loadDyeingRecords: (params?: string | any) => Promise<void>;
+  addDyeingRecord: (dataOrBatchId: DyeingRecordCreateForm | string, data?: DyeingRecordCreateForm) => Promise<DyeingRecord>;
+  updateDyeingRecord: (id: string, data: DyeingRecordUpdateForm) => Promise<DyeingRecord>;
+  deleteDyeingRecord: (id: string) => Promise<void>;
+  loadComprehensiveAnalysis: (params?: any) => Promise<void>;
+  loadSourceAnalysis: (params?: any) => Promise<void>;
+  loadPhRangeAnalysis: (params?: any) => Promise<void>;
+  loadFilterCountAnalysis: (params?: any) => Promise<void>;
+  loadReworkStatistics: (params?: any) => Promise<void>;
+  analyzeRecipeStability: (params?: { minRecords?: number; fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
+  getRecipeRecommendation: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
+  clearError: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -84,17 +62,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   loading: false,
   error: null,
   warnings: null,
-  dyeingRecords: [],
-  stabilityAnalysis: null,
-  recipeRecommendation: null,
-  traceGroups: [],
   batchRecommendation: null,
-  batchTraceChain: null,
+  dyeingRecords: [],
   comprehensiveAnalysis: null,
-  reworkStatistics: null,
   sourceAnalysis: null,
   phRangeAnalysis: null,
   filterCountAnalysis: null,
+  reworkStatistics: null,
+  stabilityAnalysis: null,
+  recipeRecommendation: null,
 
   loadConfig: async () => {
     try {
@@ -258,90 +234,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearError: () => set({ error: null }),
 
-  loadDyeingRecords: async (params) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await apiClient.dyeingRecords.list(params);
-      set({ dyeingRecords: response.data, loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
-  addDyeingRecord: async (batchId, data) => {
-    set({ loading: true, error: null });
-    try {
-      await apiClient.dyeingRecords.create(batchId, data);
-      await get().loadDyeingRecords({ batchId });
-      set({ loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
-  updateDyeingRecord: async (id, data) => {
-    set({ loading: true, error: null });
-    try {
-      await apiClient.dyeingRecords.update(id, data);
-      await get().loadDyeingRecords();
-      set({ loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
-  deleteDyeingRecord: async (id) => {
-    set({ loading: true, error: null });
-    try {
-      await apiClient.dyeingRecords.delete(id);
-      await get().loadDyeingRecords();
-      set({ loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
-  analyzeRecipeStability: async (params) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await apiClient.dyeingRecords.analyzeStability(params);
-      set({ stabilityAnalysis: response.data, loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
-  getRecipeRecommendation: async (params) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await apiClient.dyeingRecords.recommend(params);
-      set({ recipeRecommendation: response.data, loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
-  traceDyeingProcess: async (params) => {
-    set({ loading: true, error: null });
-    try {
-      const response = await apiClient.dyeingRecords.trace(params);
-      set({ traceGroups: response.data, loading: false });
-    } catch (error) {
-      set({ error: error as ApiError, loading: false });
-      throw error;
-    }
-  },
-
   getBatchRecommendation: async (params) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.batches.recommend(params);
+      const response = await apiClient.batches.recommendation(params);
       set({ batchRecommendation: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
@@ -353,73 +249,145 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ batchRecommendation: null });
   },
 
-  loadBatchTraceChain: async (batchId) => {
+  loadDyeingRecords: async (params?) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.batches.trace(batchId);
-      set({ batchTraceChain: response.data, loading: false });
+      let queryParams: any = {};
+      if (typeof params === 'string') {
+        queryParams.batchId = params;
+      } else if (params) {
+        queryParams = params;
+      }
+      const response = await apiClient.dyeingRecords.list(queryParams.batchId);
+      let records = response.data;
+      if (typeof params === 'object' && params) {
+        if (params.fabricType) records = records.filter((r: DyeingRecord) => r.fabricType === params.fabricType);
+        if (params.targetColor) records = records.filter((r: DyeingRecord) => r.targetColor.includes(params.targetColor));
+        if (params.process) records = records.filter((r: DyeingRecord) => r.process === params.process);
+      }
+      set({ dyeingRecords: records, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+    }
+  },
+
+  addDyeingRecord: async (dataOrBatchId: DyeingRecordCreateForm | string, data?: DyeingRecordCreateForm) => {
+    set({ loading: true, error: null });
+    try {
+      let payload: DyeingRecordCreateForm;
+      if (typeof dataOrBatchId === 'string') {
+        payload = { batchId: dataOrBatchId, ...(data as DyeingRecordCreateForm) };
+      } else {
+        payload = dataOrBatchId;
+      }
+      const response = await apiClient.dyeingRecords.create(payload);
+      set((state) => ({
+        dyeingRecords: [response.data, ...state.dyeingRecords],
+        loading: false,
+      }));
+      return response.data;
     } catch (error) {
       set({ error: error as ApiError, loading: false });
       throw error;
     }
   },
 
-  clearBatchTraceChain: () => {
-    set({ batchTraceChain: null });
-  },
-
-  loadComprehensiveAnalysis: async (params) => {
+  updateDyeingRecord: async (id: string, data: DyeingRecordUpdateForm) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.dyeingRecords.comprehensiveAnalysis(params);
+      const response = await apiClient.dyeingRecords.update(id, data);
+      set((state) => ({
+        dyeingRecords: state.dyeingRecords.map((r) => (r.id === id ? response.data : r)),
+        loading: false,
+      }));
+      return response.data;
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  deleteDyeingRecord: async (id: string) => {
+    set({ loading: true, error: null });
+    try {
+      await apiClient.dyeingRecords.delete(id);
+      set((state) => ({
+        dyeingRecords: state.dyeingRecords.filter((r) => r.id !== id),
+        loading: false,
+      }));
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  loadComprehensiveAnalysis: async (params?) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.analysis.comprehensive(params);
       set({ comprehensiveAnalysis: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
-      throw error;
     }
   },
 
-  loadSourceAnalysis: async (params) => {
+  loadSourceAnalysis: async (params?) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.dyeingRecords.analyzeByRawMaterial(params);
+      const response = await apiClient.analysis.source(params);
       set({ sourceAnalysis: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
-      throw error;
     }
   },
 
-  loadPhRangeAnalysis: async (params) => {
+  loadPhRangeAnalysis: async (params?) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.dyeingRecords.analyzeByPhRange(params);
+      const response = await apiClient.analysis.phRange(params);
       set({ phRangeAnalysis: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
-      throw error;
     }
   },
 
-  loadFilterCountAnalysis: async (params) => {
+  loadFilterCountAnalysis: async (params?) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.dyeingRecords.analyzeByFilterCount(params);
+      const response = await apiClient.analysis.filterCount(params);
       set({ filterCountAnalysis: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
-      throw error;
     }
   },
 
-  loadReworkStatistics: async (params) => {
+  loadReworkStatistics: async (params?) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.dyeingRecords.reworkStatistics(params);
+      const response = await apiClient.analysis.rework(params);
       set({ reworkStatistics: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
-      throw error;
+    }
+  },
+
+  analyzeRecipeStability: async (params?) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.analysis.recipeStability(params);
+      set({ stabilityAnalysis: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+    }
+  },
+
+  getRecipeRecommendation: async (params?) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.analysis.recipeRecommendation(params);
+      set({ recipeRecommendation: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
     }
   },
 }));

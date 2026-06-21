@@ -50,14 +50,12 @@ def analyze_ph_trend(ph_records):
     }
 
 
-def detect_warnings(batch, ph_records, trend_analysis, filter_records=None, usage_records=None):
+def detect_warnings(batch, ph_records, trend_analysis):
     warnings = []
     warning_level = None
     now = datetime.now()
 
     current_ph = batch.current_ph
-    filter_records = filter_records or []
-    usage_records = usage_records or []
 
     if current_ph is not None:
         is_normal = Config.APPLICABLE_PH_MIN <= current_ph <= Config.APPLICABLE_PH_MAX
@@ -163,106 +161,15 @@ def detect_warnings(batch, ph_records, trend_analysis, filter_records=None, usag
                 })
                 warning_level = 'medium'
 
-    excessive_filter_threshold = Config.WARNING_CONFIG['excessive_filter_count']
-    if batch.filter_count >= excessive_filter_threshold:
-        warnings.append({
-            'type': 'excessive_filtering',
-            'typeName': Config.WARNING_TYPES['excessive_filtering'],
-            'message': f'已进行{batch.filter_count}次过滤，超过建议阈值{excessive_filter_threshold}次',
-            'count': batch.filter_count,
-            'level': 'medium',
-            'timestamp': now.isoformat(),
-            'advice': '过滤次数过多可能导致有效成分流失，建议评估是否需要重新制备灰水',
-        })
-        if warning_level != 'high':
-            warning_level = 'medium'
-
-    total_used = sum(ur.volume_used for ur in usage_records)
-    remaining = batch.water_volume - total_used
-    remaining_percent = (remaining / batch.water_volume) * 100 if batch.water_volume > 0 else 0
-
-    very_low_threshold = Config.WARNING_CONFIG['very_low_remaining_volume_percent']
-    low_threshold = Config.WARNING_CONFIG['low_remaining_volume_percent']
-
-    if remaining_percent <= very_low_threshold:
-        warnings.append({
-            'type': 'low_remaining_volume',
-            'typeName': Config.WARNING_TYPES['low_remaining_volume'],
-            'message': f'剩余量仅剩{remaining:.1f}L（{remaining_percent:.1f}%），即将用尽',
-            'level': 'high',
-            'timestamp': now.isoformat(),
-            'advice': '剩余量严重不足，建议尽快制备新批次灰水',
-        })
-        warning_level = 'high'
-    elif remaining_percent <= low_threshold:
-        warnings.append({
-            'type': 'low_remaining_volume',
-            'typeName': Config.WARNING_TYPES['low_remaining_volume'],
-            'message': f'剩余量不足{remaining:.1f}L（{remaining_percent:.1f}%）',
-            'level': 'medium',
-            'timestamp': now.isoformat(),
-            'advice': '剩余量较低，建议提前准备新批次灰水',
-        })
-        if warning_level != 'high':
-            warning_level = 'medium'
-
-    usage_days = Config.WARNING_CONFIG['high_usage_frequency_days']
-    usage_count_threshold = Config.WARNING_CONFIG['high_usage_frequency_count']
-    recent_usage = [
-        ur for ur in usage_records
-        if (now - ur.usage_date).total_seconds() / 86400 <= usage_days
-    ]
-    if len(recent_usage) >= usage_count_threshold:
-        warnings.append({
-            'type': 'high_usage_frequency',
-            'typeName': Config.WARNING_TYPES['high_usage_frequency'],
-            'message': f'近{usage_days}天已使用{len(recent_usage)}次，使用频率较高',
-            'count': len(recent_usage),
-            'level': 'low',
-            'timestamp': now.isoformat(),
-            'advice': '使用频率较高，建议关注PH值变化，必要时增加检测频率',
-        })
-        if warning_level is None:
-            warning_level = 'low'
-
-    batch_age_days = (now - batch.created_at).total_seconds() / 86400
-    max_age_days = Config.WARNING_CONFIG['max_batch_age_days']
-    if batch_age_days >= max_age_days:
-        warnings.append({
-            'type': 'batch_expiring',
-            'typeName': Config.WARNING_TYPES['batch_expiring'],
-            'message': f'批次已使用{int(batch_age_days)}天，超过建议使用周期{max_age_days}天',
-            'level': 'medium',
-            'timestamp': now.isoformat(),
-            'advice': '批次使用时间过长，建议进行复检确认质量，或考虑制备新批次',
-        })
-        if warning_level != 'high':
-            warning_level = 'medium'
-
-    if current_ph is not None and is_normal:
-        days_since_check = (now - batch.last_ph_check_time).total_seconds() / 86400 if batch.last_ph_check_time else 0
-        if len(usage_records) >= 3 and days_since_check >= 3:
-            warnings.append({
-                'type': 'needs_recheck',
-                'typeName': Config.WARNING_TYPES['needs_recheck'],
-                'message': '近期使用频繁且已超过3天未检测，建议进行复检',
-                'level': 'low',
-                'timestamp': now.isoformat(),
-                'advice': '使用频繁的批次建议每3天检测一次PH值，确保质量稳定',
-            })
-            if warning_level is None:
-                warning_level = 'low'
-
     has_high_warning = any(w['type'] == 'consecutive_abnormal' and w.get('count', 0) >= Config.WARNING_CONFIG['consecutive_abnormal_threshold'] for w in warnings)
-    has_very_low_volume = any(w['type'] == 'low_remaining_volume' and w['level'] == 'high' for w in warnings)
-    if has_high_warning or has_very_low_volume:
+    if has_high_warning:
         warnings.append({
             'type': 'usage_restricted',
             'typeName': Config.WARNING_TYPES['usage_restricted'],
-            'message': '因质量异常或剩余量不足，该批次已被限制使用',
+            'message': '因PH连续异常，该批次已被限制使用，请处理后再使用',
             'level': 'high',
             'timestamp': now.isoformat(),
-            'advice': '请处理异常后重新检测，待指标恢复正常后方可使用',
+            'advice': '请处理PH异常后重新检测，待指标恢复正常后方可使用',
         })
 
     if not warnings:
@@ -274,7 +181,7 @@ def detect_warnings(batch, ph_records, trend_analysis, filter_records=None, usag
         'warningLevel': warning_level,
         'list': warnings,
         'warnings': warnings,
-        'usageRestricted': has_high_warning or has_very_low_volume,
+        'usageRestricted': has_high_warning,
     }
 
 
@@ -410,13 +317,10 @@ def _generate_reasons(process, current_ph, min_ph, max_ph, in_range, trend_analy
 
 def run_full_analysis(batch_id):
     from api.services.batch_service import get_batch_by_id
-    from api.models import UsageRecord, FilterRecord
 
     batch = get_batch_by_id(batch_id)
 
     ph_records = PhRecord.query.filter_by(batch_id=batch_id).order_by(PhRecord.measured_at.asc()).all()
-    filter_records = FilterRecord.query.filter_by(batch_id=batch_id).order_by(FilterRecord.filter_date.asc()).all()
-    usage_records = UsageRecord.query.filter_by(batch_id=batch_id).order_by(UsageRecord.usage_date.asc()).all()
 
     if ph_records:
         batch.last_ph_check_time = ph_records[-1].measured_at
@@ -425,7 +329,7 @@ def run_full_analysis(batch_id):
     batch.ph_trend = trend_analysis['trend']
     batch.ph_change_rate = trend_analysis['changeRate']
 
-    warning_result = detect_warnings(batch, ph_records, trend_analysis, filter_records, usage_records)
+    warning_result = detect_warnings(batch, ph_records, trend_analysis)
     batch.has_warning = warning_result['hasWarning']
     batch.warning_types = warning_result['warningTypes']
     batch.warning_level = warning_result['warningLevel']
@@ -446,6 +350,7 @@ def run_full_analysis(batch_id):
     from api.services.batch_service import determine_status
     batch.status = determine_status(batch)
 
+    filter_records = batch.filter_records
     recommendation = recommend_processes(batch, ph_records, trend_analysis, filter_records)
 
     db.session.commit()
@@ -495,130 +400,107 @@ def get_all_warnings():
     }
 
 
-def recommend_batches_for_process(process=None, fabric_type=None, min_volume=0):
-    from api.models import PhRecord, FilterRecord, UsageRecord
+def get_batch_recommendation(process=None, fabric_type=None, min_volume=0):
+    from api.services.batch_service import get_all_batches
 
+    all_batches = AshWaterBatch.query.all()
     now = datetime.now()
 
-    query = AshWaterBatch.query.filter(
-        AshWaterBatch.status != 'exhausted',
-        AshWaterBatch.usage_restricted == False,
-        AshWaterBatch.current_ph.isnot(None)
-    )
+    fabric_bonus = {}
+    fabric_ph_offset = 0.0
+    if fabric_type and fabric_type in Config.FABRIC_PROCESS_BONUS:
+        fabric_bonus = Config.FABRIC_PROCESS_BONUS[fabric_type]
+    if fabric_type and fabric_type in Config.FABRIC_PH_ADJUST:
+        fabric_ph_offset = Config.FABRIC_PH_ADJUST[fabric_type]['offset']
 
-    all_batches = query.order_by(AshWaterBatch.updated_at.desc()).all()
+    recommended_items = []
+    not_recommended_items = []
+    advice = []
 
-    results = []
     for batch in all_batches:
-        total_used = sum(ur.volume_used for ur in batch.usage_records)
-        remaining = batch.water_volume - total_used
-
-        if remaining < min_volume:
-            continue
-
         ph_records = PhRecord.query.filter_by(batch_id=batch.id).order_by(PhRecord.measured_at.asc()).all()
-        filter_records = FilterRecord.query.filter_by(batch_id=batch.id).order_by(FilterRecord.filter_date.asc()).all()
-        usage_records = batch.usage_records
-
         trend_analysis = analyze_ph_trend(ph_records)
-        warning_result = detect_warnings(batch, ph_records, trend_analysis, filter_records, usage_records)
+        warning_result = detect_warnings(batch, ph_records, trend_analysis)
+        filter_records = batch.filter_records
+        process_rec = recommend_processes(batch, ph_records, trend_analysis, filter_records)
 
-        if warning_result['usageRestricted']:
+        total_used = sum(r.volume_used for r in batch.usage_records)
+        remaining_volume = max(0.0, batch.water_volume - total_used)
+        remaining_percent = (remaining_volume / batch.water_volume) * 100 if batch.water_volume > 0 else 0
+        age_days = (now - batch.created_at).total_seconds() / 86400.0
+
+        if remaining_volume < (min_volume or 0):
             continue
-
-        recommendation = recommend_processes(batch, ph_records, trend_analysis, filter_records)
 
         process_scores = {}
-        for rec in recommendation['recommended'] + recommendation['notRecommended']:
-            process_scores[rec['process']] = {
-                'score': rec['score'],
-                'inRange': rec['inRange'],
-                'reasons': rec['reasons'],
-                'minPh': rec['minPh'],
-                'maxPh': rec['maxPh'],
-                'processName': rec['processName'],
-            }
+        for rec in process_rec['recommended'] + process_rec['notRecommended']:
+            process_name = rec['process']
+            score = rec['score']
+            if fabric_bonus and process_name in fabric_bonus:
+                score = min(100.0, score * fabric_bonus[process_name])
+            if fabric_ph_offset != 0:
+                min_ph, max_ph = Config.PROCESS_PH_RANGES[process_name]
+                effective_min = min_ph - fabric_ph_offset * 0.5
+                effective_max = max_ph - fabric_ph_offset * 0.5
+                if batch.current_ph is not None and effective_min <= batch.current_ph <= effective_max:
+                    score = min(100.0, score + 3)
+            process_scores[process_name] = rec
+            process_scores[process_name]['score'] = round(score, 1)
 
-        overall_score = recommendation['overallScore']
-
-        batch_age_days = (now - batch.created_at).total_seconds() / 86400
-        age_penalty = min(batch_age_days / 60, 0.3) * 100
-
-        remaining_percent = (remaining / batch.water_volume) * 100
-        volume_bonus = min(remaining_percent / 100, 0.2) * 100
-
-        filter_bonus = min(batch.filter_count * 2, 10)
-
-        warning_penalty = 0
-        if warning_result['hasWarning']:
-            if warning_result['warningLevel'] == 'high':
-                warning_penalty = 50
-            elif warning_result['warningLevel'] == 'medium':
-                warning_penalty = 20
+        if process:
+            target_rec = process_scores.get(process)
+            if target_rec:
+                final_score = target_rec['score']
             else:
-                warning_penalty = 10
+                final_score = 0
+        else:
+            all_scores = [s['score'] for s in process_scores.values()]
+            final_score = round(sum(all_scores) / len(all_scores), 1) if all_scores else 0
 
-        final_score = overall_score - age_penalty + volume_bonus + filter_bonus - warning_penalty
-        final_score = max(0, min(100, final_score))
+        process_recommendation = process_scores.get(process) if process else None
 
-        batch_data = batch.to_dict()
-
-        process_recommendation = None
-        if process and process in process_scores:
-            process_recommendation = process_scores[process]
-            final_score = process_scores[process]['score'] - age_penalty + volume_bonus + filter_bonus - warning_penalty
-            final_score = max(0, min(100, final_score))
-
-        results.append({
-            'batch': batch_data,
-            'remainingVolume': remaining,
-            'remainingPercent': remaining_percent,
-            'totalUsed': total_used,
-            'usageCount': len(usage_records),
-            'ageDays': batch_age_days,
-            'overallScore': round(overall_score, 1),
-            'finalScore': round(final_score, 1),
+        item = {
+            'batch': batch.to_dict(),
+            'finalScore': final_score,
+            'remainingVolume': round(remaining_volume, 1),
+            'remainingPercent': round(remaining_percent, 1),
+            'ageDays': round(age_days, 1),
+            'warnings': warning_result,
             'processScores': process_scores,
             'processRecommendation': process_recommendation,
-            'trendAnalysis': recommendation.get('trendAnalysis'),
-            'warnings': warning_result,
-            'recommendations': recommendation,
-            'isRecommended': final_score >= 60,
-        })
+        }
 
-    results.sort(key=lambda x: x['finalScore'], reverse=True)
+        if (batch.usage_restricted or
+            warning_result['warningLevel'] == 'high' or
+            final_score < 50 or
+            remaining_percent < 10):
+            not_recommended_items.append(item)
+        else:
+            recommended_items.append(item)
 
-    recommended = [r for r in results if r['isRecommended']]
-    not_recommended = [r for r in results if not r['isRecommended']]
+    recommended_items.sort(key=lambda x: x['finalScore'], reverse=True)
+    not_recommended_items.sort(key=lambda x: x['finalScore'], reverse=True)
 
-    process_advice = []
+    total_available = len(recommended_items) + len(not_recommended_items)
+
+    if fabric_type:
+        fabric_name = Config.FABRIC_TYPES.get(fabric_type, fabric_type)
+        advice.append(f'已根据{fabric_name}面料特性调整工序推荐权重和PH适配阈值')
     if process:
         process_name = Config.PROCESS_NAMES.get(process, process)
-        ph_range = Config.PROCESS_PH_RANGES.get(process)
-
-        if not recommended:
-            process_advice.append(f'当前没有适合{process_name}工序的批次，建议：')
-            process_advice.append(f'1. 检查现有批次PH值是否在{ph_range[0]}-{ph_range[1]}范围内')
-            process_advice.append('2. 考虑制备新批次灰水')
-            process_advice.append('3. 对现有批次进行过滤处理以调整碱度')
-        else:
-            best = recommended[0]
-            process_advice.append(f'推荐使用批次 {best["batch"]["batchNumber"]} 进行{process_name}')
-            if best['processRecommendation']:
-                if best['processRecommendation']['inRange']:
-                    process_advice.append(f'✓ 当前PH值 {best["batch"]["currentPh"]:.1f} 在适用范围内')
-                else:
-                    process_advice.append(f'⚠ 当前PH值 {best["batch"]["currentPh"]:.1f} 略偏离最佳范围')
+        advice.append(f'当前以{process_name}工序为主要筛选目标进行推荐')
+    if total_available == 0:
+        advice.append('当前没有符合最小体积要求的批次，建议降低最小需求量或制备新批次')
+    elif len(recommended_items) == 0:
+        advice.append('目前所有可用批次评分较低，请谨慎选择并加强PH监测')
 
     return {
         'process': process,
-        'processName': Config.PROCESS_NAMES.get(process, process) if process else None,
+        'processName': Config.PROCESS_NAMES.get(process) if process else None,
         'fabricType': fabric_type,
-        'targetPhRange': Config.PROCESS_PH_RANGES.get(process) if process else None,
-        'recommended': recommended,
-        'notRecommended': not_recommended,
-        'totalAvailable': len(results),
-        'totalRecommended': len(recommended),
-        'advice': process_advice,
-        'generatedAt': now.isoformat(),
+        'totalAvailable': total_available,
+        'totalRecommended': len(recommended_items),
+        'recommended': recommended_items,
+        'notRecommended': not_recommended_items,
+        'advice': advice,
     }

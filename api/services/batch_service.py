@@ -91,8 +91,7 @@ def create_batch(data):
     
     if data.currentPh is not None:
         batch.is_applicable, batch.applicable_processes = get_applicability(data.currentPh)
-    
-    batch.status = determine_status(batch)
+        batch.status = determine_status(batch)
     
     db.session.add(batch)
     db.session.commit()

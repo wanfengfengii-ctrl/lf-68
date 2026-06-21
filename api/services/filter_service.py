@@ -2,7 +2,6 @@ from datetime import datetime
 from api.models import db, FilterRecord
 from api.utils import NotFoundError, BusinessRuleError
 from api.services.batch_service import get_batch_by_id, determine_status, generate_id
-from api.services.analysis_service import run_full_analysis
 
 def get_filter_records(batch_id):
     batch = get_batch_by_id(batch_id)
@@ -30,7 +29,5 @@ def add_filter_record(batch_id, data):
     
     db.session.add(record)
     db.session.commit()
-    
-    run_full_analysis(batch_id)
     
     return record.to_dict()
