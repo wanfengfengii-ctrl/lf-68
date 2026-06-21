@@ -5,6 +5,8 @@ import Home from "@/pages/Home";
 import CreateBatch from "@/pages/CreateBatch";
 import BatchDetail from "@/pages/BatchDetail";
 import PhCurve from "@/pages/PhCurve";
+import DyeingRecords from "@/pages/DyeingRecords";
+import RecipeAnalysis from "@/pages/RecipeAnalysis";
 import { useAppStore } from "@/store";
 
 export default function App() {
@@ -24,6 +26,8 @@ export default function App() {
           <Route path="/batch/new" element={<CreateBatch />} />
           <Route path="/batch/:id" element={<BatchDetail />} />
           <Route path="/batch/:id/curve" element={<PhCurve />} />
+          <Route path="/dyeing-records" element={<DyeingRecords />} />
+          <Route path="/recipe-analysis" element={<RecipeAnalysis />} />
           <Route
             path="*"
             element={

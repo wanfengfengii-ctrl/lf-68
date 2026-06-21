@@ -8,6 +8,52 @@ export type WarningType = 'consecutive_abnormal' | 'long_time_no_check' | 'ph_ri
 
 export type WarningLevel = 'low' | 'medium' | 'high';
 
+export type StabilityLevel = 'excellent' | 'good' | 'fair' | 'poor' | 'unstable';
+
+export type MordantMethod =
+  | 'alum'
+  | 'iron'
+  | 'tannin'
+  | 'copper'
+  | 'tin'
+  | 'chrome'
+  | 'pre_mordant'
+  | 'meta_mordant'
+  | 'post_mordant'
+  | 'none';
+
+export type DyeMaterial =
+  | 'indigo'
+  | 'madder'
+  | 'safflower'
+  | 'turmeric'
+  | 'gardenia'
+  | 'sappanwood'
+  | 'pomegranate'
+  | 'chestnut'
+  | 'tea'
+  | 'onion_skin'
+  | 'grape_skin'
+  | 'blueberry'
+  | 'spinach'
+  | 'carrot'
+  | 'other';
+
+export type FabricType =
+  | 'cotton'
+  | 'linen'
+  | 'silk'
+  | 'wool'
+  | 'hemp'
+  | 'ramie'
+  | 'viscose'
+  | 'modal'
+  | 'tencel'
+  | 'bamboo'
+  | 'soy'
+  | 'blend'
+  | 'other';
+
 export interface WarningItem {
   type: WarningType;
   typeName: string;
@@ -201,6 +247,119 @@ export interface WarningConfig {
   phRapidChangeHours: number;
 }
 
+export interface DyeingRecord {
+  id: string;
+  batchId: string;
+  batchNumber?: string;
+  dyeingDate: string;
+  fabricType: FabricType;
+  targetColor: string;
+  dyeMaterial: DyeMaterial;
+  mordantMethod: MordantMethod;
+  dyeConcentration: number;
+  heatingTimeMinutes: number;
+  dyeingCount: number;
+  redyeCount: number;
+  colorResult?: string;
+  colorFastness?: number;
+  process: DyeingProcess;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DyeingRecordCreateForm {
+  dyeingDate?: string;
+  fabricType: FabricType;
+  targetColor: string;
+  dyeMaterial: DyeMaterial;
+  mordantMethod: MordantMethod;
+  dyeConcentration: number;
+  heatingTimeMinutes: number;
+  dyeingCount: number;
+  redyeCount: number;
+  colorResult?: string;
+  colorFastness?: number;
+  process: DyeingProcess;
+  notes?: string;
+}
+
+export interface DyeingRecordUpdateForm {
+  dyeingDate?: string;
+  fabricType?: FabricType;
+  targetColor?: string;
+  dyeMaterial?: DyeMaterial;
+  mordantMethod?: MordantMethod;
+  dyeConcentration?: number;
+  heatingTimeMinutes?: number;
+  dyeingCount?: number;
+  redyeCount?: number;
+  colorResult?: string;
+  colorFastness?: number;
+  process?: DyeingProcess;
+  notes?: string;
+}
+
+export interface RecipeGroup {
+  batchId: string;
+  batchNumber: string;
+  dyeMaterial: DyeMaterial;
+  mordantMethod: MordantMethod;
+  dyeConcentration: number;
+  heatingTimeMinutes: number;
+  dyeingCount: number;
+  fabricType: FabricType;
+  targetColor: string;
+  recordCount: number;
+  avgColorFastness?: number;
+  stdColorFastness: number;
+  avgRedyeCount: number;
+  successRate: number;
+  stabilityScore: number;
+  stabilityLevel: StabilityLevel;
+  recommendation: string;
+  sampleRecords: DyeingRecord[];
+}
+
+export interface StabilityAnalysisResult {
+  message?: string;
+  totalRecords: number;
+  analyzedGroups: number;
+  recipeGroups: RecipeGroup[];
+}
+
+export interface ProcessOptimization {
+  parameter: string;
+  current: string;
+  suggestion: string;
+  expectedBenefit: string;
+}
+
+export interface RecipeRecommendationResult {
+  hasRecommendation: boolean;
+  message?: string;
+  bestRecipe?: RecipeGroup;
+  alternatives?: RecipeGroup[];
+  suggestions?: string[];
+  redyeAdvice?: string;
+  processOptimization?: ProcessOptimization[];
+}
+
+export interface TraceGroup {
+  fabricType: FabricType;
+  targetColor: string;
+  process: DyeingProcess;
+  recordCount: number;
+  records: DyeingRecord[];
+}
+
+export interface ApiError {
+  error: string;
+  code: number;
+  field?: string;
+  rule?: string;
+}
+
 export interface ApiConfig {
   processNames: Record<DyeingProcess, string>;
   statusNames: Record<BatchStatus, string>;
@@ -209,11 +368,8 @@ export interface ApiConfig {
   warningConfig: WarningConfig;
   warningTypes: Record<WarningType, string>;
   warningLevels: Record<WarningLevel, string>;
-}
-
-export interface ApiError {
-  error: string;
-  code: number;
-  field?: string;
-  rule?: string;
+  mordantMethods: Record<MordantMethod, string>;
+  dyeMaterials: Record<DyeMaterial, string>;
+  fabricTypes: Record<FabricType, string>;
+  stabilityLevels: Record<StabilityLevel, string>;
 }

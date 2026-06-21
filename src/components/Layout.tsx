@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Droplets, PlusCircle, Home, Leaf, FlaskConical, BarChart3 } from 'lucide-react';
+import { Droplets, PlusCircle, Home, Leaf, FlaskConical, BarChart3, Palette } from 'lucide-react';
 import { useAppStore } from '@/store';
 
 export default function Layout() {
@@ -16,6 +16,8 @@ export default function Layout() {
   const navItems = [
     { path: '/', label: '批次列表', icon: Home },
     { path: '/batch/new', label: '新建批次', icon: PlusCircle },
+    { path: '/dyeing-records', label: '染色记录', icon: Palette },
+    { path: '/recipe-analysis', label: '配方分析', icon: BarChart3 },
   ];
 
   const isActive = (path: string) => {

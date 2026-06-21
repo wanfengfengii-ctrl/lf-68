@@ -103,3 +103,67 @@ class UsageRecordCreate(BaseModel):
             return datetime.fromisoformat(v.replace('Z', '+00:00'))
         except ValueError:
             raise ValueError('日期格式不正确')
+
+class DyeingRecordCreate(BaseModel):
+    dyeingDate: Optional[str] = None
+    fabricType: str = Field(..., min_length=1, max_length=100, description='布料类型')
+    targetColor: str = Field(..., min_length=1, max_length=100, description='目标颜色')
+    dyeMaterial: str = Field(..., min_length=1, max_length=100, description='染材种类')
+    mordantMethod: str = Field(..., min_length=1, max_length=100, description='媒染方式')
+    dyeConcentration: float = Field(..., gt=0, le=100, description='染液浓度(%)')
+    heatingTimeMinutes: int = Field(..., ge=1, description='加热时间(分钟)')
+    dyeingCount: int = Field(..., ge=1, description='染色次数')
+    redyeCount: int = Field(..., ge=0, description='复染次数')
+    colorResult: Optional[str] = Field(None, max_length=100, description='成色结果')
+    colorFastness: Optional[int] = Field(None, ge=1, le=5, description='色牢度等级(1-5)')
+    process: str = Field(..., description='染色工序')
+    notes: Optional[str] = None
+
+    @field_validator('process')
+    def validate_process(cls, v):
+        valid_processes = list(Config.PROCESS_PH_RANGES.keys())
+        if v not in valid_processes:
+            raise ValueError(f'工序必须是: {", ".join(valid_processes)}')
+        return v
+
+    @field_validator('dyeingDate')
+    def parse_dyeing_date(cls, v):
+        if v is None:
+            return datetime.now()
+        try:
+            return datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError('日期格式不正确')
+
+class DyeingRecordUpdate(BaseModel):
+    dyeingDate: Optional[str] = None
+    fabricType: Optional[str] = Field(None, min_length=1, max_length=100)
+    targetColor: Optional[str] = Field(None, min_length=1, max_length=100)
+    dyeMaterial: Optional[str] = Field(None, min_length=1, max_length=100)
+    mordantMethod: Optional[str] = Field(None, min_length=1, max_length=100)
+    dyeConcentration: Optional[float] = Field(None, gt=0, le=100)
+    heatingTimeMinutes: Optional[int] = Field(None, ge=1)
+    dyeingCount: Optional[int] = Field(None, ge=1)
+    redyeCount: Optional[int] = Field(None, ge=0)
+    colorResult: Optional[str] = Field(None, max_length=100)
+    colorFastness: Optional[int] = Field(None, ge=1, le=5)
+    process: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator('process')
+    def validate_process(cls, v):
+        if v is None:
+            return v
+        valid_processes = list(Config.PROCESS_PH_RANGES.keys())
+        if v not in valid_processes:
+            raise ValueError(f'工序必须是: {", ".join(valid_processes)}')
+        return v
+
+    @field_validator('dyeingDate')
+    def parse_dyeing_date(cls, v):
+        if v is None:
+            return v
+        try:
+            return datetime.fromisoformat(v.replace('Z', '+00:00'))
+        except ValueError:
+            raise ValueError('日期格式不正确')

@@ -3,7 +3,9 @@ from .validators import (
     BatchUpdate,
     PhRecordCreate,
     FilterRecordCreate,
-    UsageRecordCreate
+    UsageRecordCreate,
+    DyeingRecordCreate,
+    DyeingRecordUpdate
 )
 from .errors import (
     APIError,
@@ -22,6 +24,8 @@ __all__ = [
     'PhRecordCreate',
     'FilterRecordCreate',
     'UsageRecordCreate',
+    'DyeingRecordCreate',
+    'DyeingRecordUpdate',
     'APIError',
     'ValidationError',
     'NotFoundError',

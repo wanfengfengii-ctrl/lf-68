@@ -13,6 +13,12 @@ import type {
   ApiError,
   AnalysisResult,
   AllWarningsResult,
+  DyeingRecord,
+  DyeingRecordCreateForm,
+  DyeingRecordUpdateForm,
+  StabilityAnalysisResult,
+  RecipeRecommendationResult,
+  TraceGroup,
 } from '@/types';
 
 const api = axios.create({
@@ -72,6 +78,23 @@ export const apiClient = {
     list: (batchId: string) => api.get<UsageRecord[]>(`/batches/${batchId}/usage-records`),
     create: (batchId: string, data: UsageRecordCreateForm) =>
       api.post<UsageRecord>(`/batches/${batchId}/usage-records`, data),
+  },
+
+  dyeingRecords: {
+    list: (params?: { batchId?: string; fabricType?: string; targetColor?: string; process?: string }) =>
+      api.get<DyeingRecord[]>('/batches/dyeing-records', { params }),
+    get: (id: string) => api.get<DyeingRecord>(`/batches/dyeing-records/${id}`),
+    create: (batchId: string, data: DyeingRecordCreateForm) =>
+      api.post<DyeingRecord>(`/batches/${batchId}/dyeing-records`, data),
+    update: (id: string, data: DyeingRecordUpdateForm) =>
+      api.put<DyeingRecord>(`/batches/dyeing-records/${id}`, data),
+    delete: (id: string) => api.delete(`/batches/dyeing-records/${id}`),
+    trace: (params?: { fabricType?: string; targetColor?: string; process?: string }) =>
+      api.get<TraceGroup[]>('/batches/dyeing-records/trace', { params }),
+    analyzeStability: (params?: { fabricType?: string; targetColor?: string; process?: string }) =>
+      api.get<StabilityAnalysisResult>('/batches/dyeing-records/analyze/stability', { params }),
+    recommend: (params: { fabricType: string; targetColor: string; process?: string }) =>
+      api.get<RecipeRecommendationResult>('/batches/dyeing-records/recommend', { params }),
   },
 };
 

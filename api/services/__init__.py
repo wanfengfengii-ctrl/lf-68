@@ -19,6 +19,17 @@ from .analysis_service import (
     run_full_analysis,
     get_all_warnings,
 )
+from .dyeing_service import (
+    get_dyeing_records,
+    get_dyeing_record_by_id,
+    get_dyeing_record_detail,
+    add_dyeing_record,
+    update_dyeing_record,
+    delete_dyeing_record,
+    trace_dyeing_process,
+    analyze_recipe_stability,
+    get_recipe_recommendation,
+)
 
 __all__ = [
     'get_all_batches',
@@ -41,4 +52,13 @@ __all__ = [
     'recommend_processes',
     'run_full_analysis',
     'get_all_warnings',
+    'get_dyeing_records',
+    'get_dyeing_record_by_id',
+    'get_dyeing_record_detail',
+    'add_dyeing_record',
+    'update_dyeing_record',
+    'delete_dyeing_record',
+    'trace_dyeing_process',
+    'analyze_recipe_stability',
+    'get_recipe_recommendation',
 ]

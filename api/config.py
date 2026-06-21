@@ -62,3 +62,58 @@ class Config:
         'medium': '警告',
         'high': '严重',
     }
+
+    MORDANT_METHODS = {
+        'alum': '明矾媒染',
+        'iron': '铁媒染',
+        'tannin': '单宁媒染',
+        'copper': '铜媒染',
+        'tin': '锡媒染',
+        'chrome': '铬媒染',
+        'pre_mordant': '预媒染',
+        'meta_mordant': '同媒染',
+        'post_mordant': '后媒染',
+        'none': '无媒染',
+    }
+
+    DYE_MATERIALS = {
+        'indigo': '靛蓝',
+        'madder': '茜草',
+        'safflower': '红花',
+        'turmeric': '姜黄',
+        'gardenia': '栀子',
+        'sappanwood': '苏木',
+        'pomegranate': '石榴皮',
+        'chestnut': '板栗壳',
+        'tea': '茶叶',
+        'onion_skin': '洋葱皮',
+        'grape_skin': '葡萄皮',
+        'blueberry': '蓝莓',
+        'spinach': '菠菜',
+        'carrot': '胡萝卜',
+        'other': '其他',
+    }
+
+    FABRIC_TYPES = {
+        'cotton': '棉布',
+        'linen': '亚麻',
+        'silk': '丝绸',
+        'wool': '羊毛',
+        'hemp': '大麻',
+        'ramie': '苎麻',
+        'viscose': '粘胶纤维',
+        'modal': '莫代尔',
+        'tencel': '天丝',
+        'bamboo': '竹纤维',
+        'soy': '大豆纤维',
+        'blend': '混纺',
+        'other': '其他',
+    }
+
+    STABILITY_LEVELS = {
+        'excellent': '优秀',
+        'good': '良好',
+        'fair': '一般',
+        'poor': '较差',
+        'unstable': '不稳定',
+    }

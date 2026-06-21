@@ -1,5 +1,17 @@
 import { create } from 'zustand';
-import type { AshWaterBatch, ApiConfig, ApiError, AllWarningsResult, AnalysisResult } from '@/types';
+import type {
+  AshWaterBatch,
+  ApiConfig,
+  ApiError,
+  AllWarningsResult,
+  AnalysisResult,
+  DyeingRecord,
+  DyeingRecordCreateForm,
+  DyeingRecordUpdateForm,
+  StabilityAnalysisResult,
+  RecipeRecommendationResult,
+  TraceGroup,
+} from '@/types';
 import { apiClient } from '@/lib/api';
 
 interface AppState {
@@ -9,6 +21,10 @@ interface AppState {
   loading: boolean;
   error: ApiError | null;
   warnings: AllWarningsResult | null;
+  dyeingRecords: DyeingRecord[];
+  stabilityAnalysis: StabilityAnalysisResult | null;
+  recipeRecommendation: RecipeRecommendationResult | null;
+  traceGroups: TraceGroup[];
 
   loadConfig: () => Promise<void>;
   loadBatches: (status?: string, search?: string, hasWarning?: boolean) => Promise<void>;
@@ -24,6 +40,14 @@ interface AppState {
   refreshWarnings: () => Promise<void>;
   analyzeBatch: (batchId: string) => Promise<AnalysisResult>;
   clearError: () => void;
+
+  loadDyeingRecords: (params?: { batchId?: string; fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
+  addDyeingRecord: (batchId: string, data: DyeingRecordCreateForm) => Promise<void>;
+  updateDyeingRecord: (id: string, data: DyeingRecordUpdateForm) => Promise<void>;
+  deleteDyeingRecord: (id: string) => Promise<void>;
+  analyzeRecipeStability: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
+  getRecipeRecommendation: (params: { fabricType: string; targetColor: string; process?: string }) => Promise<void>;
+  traceDyeingProcess: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -33,6 +57,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   loading: false,
   error: null,
   warnings: null,
+  dyeingRecords: [],
+  stabilityAnalysis: null,
+  recipeRecommendation: null,
+  traceGroups: [],
 
   loadConfig: async () => {
     try {
@@ -195,4 +223,84 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  loadDyeingRecords: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.list(params);
+      set({ dyeingRecords: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  addDyeingRecord: async (batchId, data) => {
+    set({ loading: true, error: null });
+    try {
+      await apiClient.dyeingRecords.create(batchId, data);
+      await get().loadDyeingRecords({ batchId });
+      set({ loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  updateDyeingRecord: async (id, data) => {
+    set({ loading: true, error: null });
+    try {
+      await apiClient.dyeingRecords.update(id, data);
+      await get().loadDyeingRecords();
+      set({ loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  deleteDyeingRecord: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      await apiClient.dyeingRecords.delete(id);
+      await get().loadDyeingRecords();
+      set({ loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  analyzeRecipeStability: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.analyzeStability(params);
+      set({ stabilityAnalysis: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  getRecipeRecommendation: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.recommend(params);
+      set({ recipeRecommendation: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  traceDyeingProcess: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.trace(params);
+      set({ traceGroups: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
 }));
