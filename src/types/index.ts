@@ -251,6 +251,9 @@ export interface DyeingRecord {
   id: string;
   batchId: string;
   batchNumber?: string;
+  rawMaterialSource?: string;
+  batchCurrentPh?: number | null;
+  batchFilterCount?: number;
   dyeingDate: string;
   fabricType: FabricType;
   targetColor: string;
@@ -264,6 +267,12 @@ export interface DyeingRecord {
   colorFastness?: number;
   process: DyeingProcess;
   notes?: string;
+  isSuccess: boolean;
+  isRework: boolean;
+  reworkReason?: string;
+  failureReason?: string;
+  taskName?: string;
+  operator?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -282,6 +291,12 @@ export interface DyeingRecordCreateForm {
   colorFastness?: number;
   process: DyeingProcess;
   notes?: string;
+  isSuccess?: boolean;
+  isRework?: boolean;
+  reworkReason?: string;
+  failureReason?: string;
+  taskName?: string;
+  operator?: string;
 }
 
 export interface DyeingRecordUpdateForm {
@@ -298,6 +313,12 @@ export interface DyeingRecordUpdateForm {
   colorFastness?: number;
   process?: DyeingProcess;
   notes?: string;
+  isSuccess?: boolean;
+  isRework?: boolean;
+  reworkReason?: string;
+  failureReason?: string;
+  taskName?: string;
+  operator?: string;
 }
 
 export interface RecipeGroup {
@@ -351,6 +372,154 @@ export interface TraceGroup {
   process: DyeingProcess;
   recordCount: number;
   records: DyeingRecord[];
+}
+
+export interface BatchTraceSummary {
+  totalDyeingRecords: number;
+  successCount: number;
+  reworkCount: number;
+  failureCount: number;
+  successRate: number;
+  avgColorFastness: number | null;
+  stdColorFastness: number;
+  avgRedyeCount: number;
+  totalUsedVolume: number;
+  remainingVolume: number;
+  phRecordCount: number;
+  filterRecordCount: number;
+  usageRecordCount: number;
+}
+
+export interface BatchTraceStats {
+  dyeMaterials: Record<string, number>;
+  mordantMethods: Record<string, number>;
+  fabricTypes: Record<string, number>;
+}
+
+export interface BatchTraceChain {
+  batch: AshWaterBatch;
+  summary: BatchTraceSummary;
+  stats: BatchTraceStats;
+  phRecords: PhRecord[];
+  filterRecords: FilterRecord[];
+  usageRecords: UsageRecord[];
+  dyeingRecords: DyeingRecord[];
+}
+
+export interface TopItemStat {
+  item: string;
+  count: number;
+}
+
+export interface SourceAnalysisGroup {
+  rawMaterialSource: string;
+  recordCount: number;
+  successCount: number;
+  reworkCount: number;
+  failureCount: number;
+  successRate: number;
+  avgColorFastness: number | null;
+  stdColorFastness: number;
+  avgRedyeCount: number;
+  score: number;
+  grade: StabilityLevel;
+  topDyeMaterials: TopItemStat[];
+  topMordantMethods: TopItemStat[];
+}
+
+export interface SourceAnalysisResult {
+  totalRecords: number;
+  sourceCount: number;
+  groups: SourceAnalysisGroup[];
+}
+
+export interface PhRangeAnalysisGroup {
+  phRange: string;
+  phMin: number;
+  phMax: number;
+  avgPh: number;
+  recordCount: number;
+  successCount: number;
+  reworkCount: number;
+  failureCount: number;
+  successRate: number;
+  avgColorFastness: number | null;
+  stdColorFastness: number;
+  avgRedyeCount: number;
+  score: number;
+  grade: StabilityLevel;
+}
+
+export interface PhRangeAnalysisResult {
+  totalRecords: number;
+  rangeCount: number;
+  groups: PhRangeAnalysisGroup[];
+}
+
+export interface FilterCountAnalysisGroup {
+  filterRange: string;
+  filterMin: number;
+  filterMax: number;
+  avgFilterCount: number;
+  recordCount: number;
+  successCount: number;
+  reworkCount: number;
+  failureCount: number;
+  successRate: number;
+  avgColorFastness: number | null;
+  stdColorFastness: number;
+  avgRedyeCount: number;
+  score: number;
+  grade: StabilityLevel;
+}
+
+export interface FilterCountAnalysisResult {
+  totalRecords: number;
+  rangeCount: number;
+  groups: FilterCountAnalysisGroup[];
+}
+
+export interface AnalysisRecommendation {
+  type: string;
+  title: string;
+  content: string;
+  score: number;
+}
+
+export interface ComprehensiveAnalysisOverview {
+  totalRecords: number;
+  successCount: number;
+  reworkCount: number;
+  failureCount: number;
+  successRate: number;
+  avgColorFastness: number | null;
+  avgRedyeCount: number;
+}
+
+export interface ComprehensiveAnalysisResult {
+  overview: ComprehensiveAnalysisOverview;
+  byRawMaterial: SourceAnalysisResult;
+  byPhRange: PhRangeAnalysisResult;
+  byFilterCount: FilterCountAnalysisResult;
+  recommendations: AnalysisRecommendation[];
+}
+
+export interface ReworkStatisticsResult {
+  totalRecords: number;
+  reworkCount: number;
+  failureCount: number;
+  reworkRate: number;
+  failureRate: number;
+  reworkReasons: Record<string, number>;
+  failureReasons: Record<string, number>;
+  byMaterial: {
+    dyeMaterial: string;
+    total: number;
+    reworkCount: number;
+    failureCount: number;
+    reworkRate: number;
+    failureRate: number;
+  }[];
 }
 
 export interface ApiError {

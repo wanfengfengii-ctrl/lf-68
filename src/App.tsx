@@ -8,6 +8,7 @@ import PhCurve from "@/pages/PhCurve";
 import DyeingRecords from "@/pages/DyeingRecords";
 import RecipeAnalysis from "@/pages/RecipeAnalysis";
 import IntelligentRecommendation from "@/pages/IntelligentRecommendation";
+import ProcessAnalysis from "@/pages/ProcessAnalysis";
 import { useAppStore } from "@/store";
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/dyeing-records" element={<DyeingRecords />} />
           <Route path="/recipe-analysis" element={<RecipeAnalysis />} />
           <Route path="/intelligent-recommendation" element={<IntelligentRecommendation />} />
+          <Route path="/process-analysis" element={<ProcessAnalysis />} />
           <Route
             path="*"
             element={

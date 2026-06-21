@@ -20,6 +20,12 @@ class DyeingRecord(db.Model):
     color_fastness = db.Column(db.Integer)
     process = db.Column(db.String(50), nullable=False)
     notes = db.Column(db.Text)
+    is_success = db.Column(db.Boolean, default=True)
+    is_rework = db.Column(db.Boolean, default=False)
+    rework_reason = db.Column(db.String(200))
+    failure_reason = db.Column(db.String(200))
+    task_name = db.Column(db.String(100))
+    operator = db.Column(db.String(100))
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
 
@@ -40,7 +46,16 @@ class DyeingRecord(db.Model):
             'colorFastness': self.color_fastness,
             'process': self.process,
             'notes': self.notes,
+            'isSuccess': self.is_success if self.is_success is not None else True,
+            'isRework': self.is_rework if self.is_rework is not None else False,
+            'reworkReason': self.rework_reason,
+            'failureReason': self.failure_reason,
+            'taskName': self.task_name,
+            'operator': self.operator,
             'createdAt': self.created_at.isoformat() if self.created_at else None,
             'updatedAt': self.updated_at.isoformat() if self.updated_at else None,
             'batchNumber': self.batch.batch_number if self.batch else None,
+            'rawMaterialSource': self.batch.raw_material_source if self.batch else None,
+            'batchCurrentPh': self.batch.current_ph if self.batch else None,
+            'batchFilterCount': self.batch.filter_count if self.batch else None,
         }

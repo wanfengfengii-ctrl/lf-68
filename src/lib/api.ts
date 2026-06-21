@@ -22,6 +22,13 @@ import type {
   BatchRecommendationResult,
   DyeingProcess,
   FabricType,
+  BatchTraceChain,
+  ComprehensiveAnalysisResult,
+  SourceAnalysisResult,
+  PhRangeAnalysisResult,
+  FilterCountAnalysisResult,
+  ReworkStatisticsResult,
+  DyeMaterial,
 } from '@/types';
 
 const api = axios.create({
@@ -65,6 +72,8 @@ export const apiClient = {
       api.post<AllWarningsResult>('/batches/warnings/refresh'),
     recommend: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) =>
       api.get<BatchRecommendationResult>('/batches/recommend', { params }),
+    trace: (id: string) =>
+      api.get<BatchTraceChain>(`/batches/${id}/trace`),
   },
 
   phRecords: {
@@ -100,6 +109,16 @@ export const apiClient = {
       api.get<StabilityAnalysisResult>('/batches/dyeing-records/analyze/stability', { params }),
     recommend: (params: { fabricType: string; targetColor: string; process?: string }) =>
       api.get<RecipeRecommendationResult>('/batches/dyeing-records/recommend', { params }),
+    comprehensiveAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType; process?: DyeingProcess }) =>
+      api.get<ComprehensiveAnalysisResult>('/batches/dyeing-records/analysis/comprehensive', { params }),
+    analyzeByRawMaterial: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
+      api.get<SourceAnalysisResult>('/batches/dyeing-records/analysis/by-raw-material', { params }),
+    analyzeByPhRange: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
+      api.get<PhRangeAnalysisResult>('/batches/dyeing-records/analysis/by-ph-range', { params }),
+    analyzeByFilterCount: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
+      api.get<FilterCountAnalysisResult>('/batches/dyeing-records/analysis/by-filter-count', { params }),
+    reworkStatistics: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) =>
+      api.get<ReworkStatisticsResult>('/batches/dyeing-records/statistics/rework', { params }),
   },
 };
 
@@ -143,4 +162,9 @@ export const formatDate = (isoString: string): string => {
     month: '2-digit',
     day: '2-digit',
   });
+};
+
+export const formatNumber = (value: number | null | undefined, decimals: number = 1): string => {
+  if (value === null || value === undefined) return '-';
+  return Number(value).toFixed(decimals);
 };

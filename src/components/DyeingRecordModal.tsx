@@ -51,6 +51,12 @@ export default function DyeingRecordModal({
     colorResult: '',
     colorFastness: undefined,
     process: 'dyeing',
+    taskName: '',
+    operator: '',
+    isSuccess: true,
+    isRework: false,
+    reworkReason: '',
+    failureReason: '',
     notes: '',
   });
 
@@ -72,6 +78,12 @@ export default function DyeingRecordModal({
         colorResult: record.colorResult || '',
         colorFastness: record.colorFastness,
         process: record.process,
+        taskName: record.taskName || '',
+        operator: record.operator || '',
+        isSuccess: record.isSuccess,
+        isRework: record.isRework,
+        reworkReason: record.reworkReason || '',
+        failureReason: record.failureReason || '',
         notes: record.notes || '',
       });
     } else if (isOpen) {
@@ -88,6 +100,12 @@ export default function DyeingRecordModal({
         colorResult: '',
         colorFastness: undefined,
         process: 'dyeing',
+        taskName: '',
+        operator: '',
+        isSuccess: true,
+        isRework: false,
+        reworkReason: '',
+        failureReason: '',
         notes: '',
       });
     }
@@ -388,6 +406,91 @@ export default function DyeingRecordModal({
             )}
           </div>
         </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="label">任务名称</label>
+            <input
+              type="text"
+              value={form.taskName}
+              onChange={(e) => setForm({ ...form, taskName: e.target.value })}
+              className="input"
+              placeholder="如：2024春季靛蓝染制"
+            />
+          </div>
+          <div>
+            <label className="label">操作人</label>
+            <input
+              type="text"
+              value={form.operator}
+              onChange={(e) => setForm({ ...form, operator: e.target.value })}
+              className="input"
+              placeholder="染色操作人姓名"
+            />
+          </div>
+        </div>
+
+        <div className="bg-earth-50 rounded-lg p-4">
+          <h4 className="font-medium text-earth-900 mb-3">染色结果</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isSuccess}
+                onChange={(e) => {
+                  const isSuccess = e.target.checked;
+                  setForm({
+                    ...form,
+                    isSuccess,
+                    failureReason: isSuccess ? '' : form.failureReason,
+                  });
+                }}
+                className="w-4 h-4 text-moss-600 rounded focus:ring-moss-500"
+              />
+              <span className="text-sm text-earth-700">染色成功</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isRework}
+                onChange={(e) => {
+                  const isRework = e.target.checked;
+                  setForm({
+                    ...form,
+                    isRework,
+                    reworkReason: isRework ? form.reworkReason : '',
+                  });
+                }}
+                className="w-4 h-4 text-moss-600 rounded focus:ring-moss-500"
+              />
+              <span className="text-sm text-earth-700">返工/复染</span>
+            </label>
+          </div>
+        </div>
+
+        {form.isRework && (
+          <div>
+            <label className="label">返工原因</label>
+            <textarea
+              value={form.reworkReason}
+              onChange={(e) => setForm({ ...form, reworkReason: e.target.value })}
+              className="input min-h-[60px]"
+              placeholder="描述返工的原因..."
+            />
+          </div>
+        )}
+
+        {!form.isSuccess && (
+          <div>
+            <label className="label">失败原因</label>
+            <textarea
+              value={form.failureReason}
+              onChange={(e) => setForm({ ...form, failureReason: e.target.value })}
+              className="input min-h-[60px]"
+              placeholder="描述染色失败的原因..."
+            />
+          </div>
+        )}
 
         <div>
           <label className="label">备注</label>

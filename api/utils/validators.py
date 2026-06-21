@@ -118,6 +118,12 @@ class DyeingRecordCreate(BaseModel):
     colorFastness: Optional[int] = Field(None, ge=1, le=5, description='色牢度等级(1-5)')
     process: str = Field(..., description='染色工序')
     notes: Optional[str] = None
+    isSuccess: Optional[bool] = True
+    isRework: Optional[bool] = False
+    reworkReason: Optional[str] = Field(None, max_length=200, description='返工原因')
+    failureReason: Optional[str] = Field(None, max_length=200, description='失败原因')
+    taskName: Optional[str] = Field(None, max_length=100, description='任务名称')
+    operator: Optional[str] = Field(None, max_length=100, description='操作人员')
 
     @field_validator('process')
     def validate_process(cls, v):
@@ -149,6 +155,12 @@ class DyeingRecordUpdate(BaseModel):
     colorFastness: Optional[int] = Field(None, ge=1, le=5)
     process: Optional[str] = None
     notes: Optional[str] = None
+    isSuccess: Optional[bool] = None
+    isRework: Optional[bool] = None
+    reworkReason: Optional[str] = Field(None, max_length=200)
+    failureReason: Optional[str] = Field(None, max_length=200)
+    taskName: Optional[str] = Field(None, max_length=100)
+    operator: Optional[str] = Field(None, max_length=100)
 
     @field_validator('process')
     def validate_process(cls, v):

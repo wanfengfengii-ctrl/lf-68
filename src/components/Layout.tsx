@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Droplets, PlusCircle, Home, Leaf, FlaskConical, BarChart3, Palette, Sparkles } from 'lucide-react';
+import { Droplets, PlusCircle, Home, Leaf, FlaskConical, BarChart3, Palette, Sparkles, LineChart } from 'lucide-react';
 import { useAppStore } from '@/store';
 
 export default function Layout() {
@@ -19,6 +19,7 @@ export default function Layout() {
     { path: '/intelligent-recommendation', label: '智能推荐', icon: Sparkles },
     { path: '/dyeing-records', label: '染色记录', icon: Palette },
     { path: '/recipe-analysis', label: '配方分析', icon: BarChart3 },
+    { path: '/process-analysis', label: '工艺分析', icon: LineChart },
   ];
 
   const isActive = (path: string) => {

@@ -48,7 +48,13 @@ def add_dyeing_record(batch_id, data):
         color_result=data.colorResult,
         color_fastness=data.colorFastness,
         process=data.process,
-        notes=data.notes
+        notes=data.notes,
+        is_success=data.isSuccess if data.isSuccess is not None else True,
+        is_rework=data.isRework if data.isRework is not None else False,
+        rework_reason=data.reworkReason,
+        failure_reason=data.failureReason,
+        task_name=data.taskName,
+        operator=data.operator
     )
     
     db.session.add(record)
@@ -61,31 +67,29 @@ def update_dyeing_record(record_id, data):
     
     update_data = data.model_dump(exclude_unset=True)
     
+    field_mapping = {
+        'dyeingDate': 'dyeing_date',
+        'fabricType': 'fabric_type',
+        'targetColor': 'target_color',
+        'dyeMaterial': 'dye_material',
+        'mordantMethod': 'mordant_method',
+        'dyeConcentration': 'dye_concentration',
+        'heatingTimeMinutes': 'heating_time_minutes',
+        'dyeingCount': 'dyeing_count',
+        'redyeCount': 'redye_count',
+        'colorResult': 'color_result',
+        'colorFastness': 'color_fastness',
+        'isSuccess': 'is_success',
+        'isRework': 'is_rework',
+        'reworkReason': 'rework_reason',
+        'failureReason': 'failure_reason',
+        'taskName': 'task_name',
+        'operator': 'operator',
+    }
+    
     for key, value in update_data.items():
-        if key == 'dyeingDate':
-            setattr(record, 'dyeing_date', value)
-        elif key == 'fabricType':
-            setattr(record, 'fabric_type', value)
-        elif key == 'targetColor':
-            setattr(record, 'target_color', value)
-        elif key == 'dyeMaterial':
-            setattr(record, 'dye_material', value)
-        elif key == 'mordantMethod':
-            setattr(record, 'mordant_method', value)
-        elif key == 'dyeConcentration':
-            setattr(record, 'dye_concentration', value)
-        elif key == 'heatingTimeMinutes':
-            setattr(record, 'heating_time_minutes', value)
-        elif key == 'dyeingCount':
-            setattr(record, 'dyeing_count', value)
-        elif key == 'redyeCount':
-            setattr(record, 'redye_count', value)
-        elif key == 'colorResult':
-            setattr(record, 'color_result', value)
-        elif key == 'colorFastness':
-            setattr(record, 'color_fastness', value)
-        elif value is not None:
-            setattr(record, key, value)
+        if key in field_mapping:
+            setattr(record, field_mapping[key], value)
     
     record.updated_at = datetime.now()
     db.session.commit()

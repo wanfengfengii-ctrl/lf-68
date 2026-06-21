@@ -7,7 +7,12 @@ from api.services import (
     delete_dyeing_record,
     trace_dyeing_process,
     analyze_recipe_stability,
-    get_recipe_recommendation
+    get_recipe_recommendation,
+    get_comprehensive_analysis,
+    get_rework_statistics,
+    analyze_by_raw_material,
+    analyze_by_ph_range,
+    analyze_by_filter_count,
 )
 from api.utils import DyeingRecordCreate, DyeingRecordUpdate, handle_validation_error
 
@@ -98,5 +103,62 @@ def get_recommendation():
         fabric_type=fabric_type,
         target_color=target_color,
         process=process
+    )
+    return jsonify(result)
+
+@bp.route('/dyeing-records/analysis/comprehensive', methods=['GET'])
+def comprehensive_analysis():
+    dye_material = request.args.get('dyeMaterial')
+    fabric_type = request.args.get('fabricType')
+    process = request.args.get('process')
+    
+    result = get_comprehensive_analysis(
+        dye_material=dye_material,
+        fabric_type=fabric_type,
+        process=process
+    )
+    return jsonify(result)
+
+@bp.route('/dyeing-records/analysis/by-raw-material', methods=['GET'])
+def analysis_by_raw_material():
+    dye_material = request.args.get('dyeMaterial')
+    fabric_type = request.args.get('fabricType')
+    
+    result = analyze_by_raw_material(
+        dye_material=dye_material,
+        fabric_type=fabric_type
+    )
+    return jsonify(result)
+
+@bp.route('/dyeing-records/analysis/by-ph-range', methods=['GET'])
+def analysis_by_ph_range():
+    dye_material = request.args.get('dyeMaterial')
+    fabric_type = request.args.get('fabricType')
+    
+    result = analyze_by_ph_range(
+        dye_material=dye_material,
+        fabric_type=fabric_type
+    )
+    return jsonify(result)
+
+@bp.route('/dyeing-records/analysis/by-filter-count', methods=['GET'])
+def analysis_by_filter_count():
+    dye_material = request.args.get('dyeMaterial')
+    fabric_type = request.args.get('fabricType')
+    
+    result = analyze_by_filter_count(
+        dye_material=dye_material,
+        fabric_type=fabric_type
+    )
+    return jsonify(result)
+
+@bp.route('/dyeing-records/statistics/rework', methods=['GET'])
+def rework_statistics():
+    dye_material = request.args.get('dyeMaterial')
+    fabric_type = request.args.get('fabricType')
+    
+    result = get_rework_statistics(
+        dye_material=dye_material,
+        fabric_type=fabric_type
     )
     return jsonify(result)

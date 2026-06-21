@@ -83,6 +83,32 @@ def migrate_database():
             else:
                 print(f'- 字段已存在: {col_name}')
 
+        dyeing_existing_columns = [col['name'] for col in inspector.get_columns('dyeing_record')]
+        print(f"\ndyeing_record 现有字段: {dyeing_existing_columns}")
+
+        dyeing_new_columns = [
+            ('is_success', 'INTEGER DEFAULT 1'),
+            ('is_rework', 'INTEGER DEFAULT 0'),
+            ('rework_reason', 'VARCHAR(200)'),
+            ('failure_reason', 'VARCHAR(200)'),
+            ('task_name', 'VARCHAR(100)'),
+            ('operator', 'VARCHAR(100)'),
+        ]
+
+        for col_name, col_def in dyeing_new_columns:
+            if col_name not in dyeing_existing_columns:
+                try:
+                    with db.engine.connect() as conn:
+                        conn.execute(db.text(
+                            f'ALTER TABLE dyeing_record ADD COLUMN {col_name} {col_def}'
+                        ))
+                        conn.commit()
+                    print(f'✓ 添加 dyeing_record 字段: {col_name}')
+                except Exception as e:
+                    print(f'✗ 添加 dyeing_record 字段 {col_name} 失败: {e}')
+            else:
+                print(f'- dyeing_record 字段已存在: {col_name}')
+
         print('\n数据库迁移完成！')
 
 if __name__ == '__main__':

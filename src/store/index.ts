@@ -14,6 +14,13 @@ import type {
   BatchRecommendationResult,
   DyeingProcess,
   FabricType,
+  BatchTraceChain,
+  ComprehensiveAnalysisResult,
+  ReworkStatisticsResult,
+  SourceAnalysisResult,
+  PhRangeAnalysisResult,
+  FilterCountAnalysisResult,
+  DyeMaterial,
 } from '@/types';
 import { apiClient } from '@/lib/api';
 
@@ -29,6 +36,12 @@ interface AppState {
   recipeRecommendation: RecipeRecommendationResult | null;
   traceGroups: TraceGroup[];
   batchRecommendation: BatchRecommendationResult | null;
+  batchTraceChain: BatchTraceChain | null;
+  comprehensiveAnalysis: ComprehensiveAnalysisResult | null;
+  reworkStatistics: ReworkStatisticsResult | null;
+  sourceAnalysis: SourceAnalysisResult | null;
+  phRangeAnalysis: PhRangeAnalysisResult | null;
+  filterCountAnalysis: FilterCountAnalysisResult | null;
 
   loadConfig: () => Promise<void>;
   loadBatches: (status?: string, search?: string, hasWarning?: boolean) => Promise<void>;
@@ -54,6 +67,14 @@ interface AppState {
   traceDyeingProcess: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
   getBatchRecommendation: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) => Promise<void>;
   clearBatchRecommendation: () => void;
+
+  loadBatchTraceChain: (batchId: string) => Promise<void>;
+  clearBatchTraceChain: () => void;
+  loadComprehensiveAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType; process?: DyeingProcess }) => Promise<void>;
+  loadSourceAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
+  loadPhRangeAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
+  loadFilterCountAnalysis: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
+  loadReworkStatistics: (params?: { dyeMaterial?: DyeMaterial; fabricType?: FabricType }) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -68,6 +89,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   recipeRecommendation: null,
   traceGroups: [],
   batchRecommendation: null,
+  batchTraceChain: null,
+  comprehensiveAnalysis: null,
+  reworkStatistics: null,
+  sourceAnalysis: null,
+  phRangeAnalysis: null,
+  filterCountAnalysis: null,
 
   loadConfig: async () => {
     try {
@@ -324,5 +351,75 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearBatchRecommendation: () => {
     set({ batchRecommendation: null });
+  },
+
+  loadBatchTraceChain: async (batchId) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.batches.trace(batchId);
+      set({ batchTraceChain: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  clearBatchTraceChain: () => {
+    set({ batchTraceChain: null });
+  },
+
+  loadComprehensiveAnalysis: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.comprehensiveAnalysis(params);
+      set({ comprehensiveAnalysis: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  loadSourceAnalysis: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.analyzeByRawMaterial(params);
+      set({ sourceAnalysis: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  loadPhRangeAnalysis: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.analyzeByPhRange(params);
+      set({ phRangeAnalysis: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  loadFilterCountAnalysis: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.analyzeByFilterCount(params);
+      set({ filterCountAnalysis: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  loadReworkStatistics: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.dyeingRecords.reworkStatistics(params);
+      set({ reworkStatistics: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
   },
 }));

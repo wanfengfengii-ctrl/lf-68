@@ -31,6 +31,14 @@ from .dyeing_service import (
     analyze_recipe_stability,
     get_recipe_recommendation,
 )
+from .trace_service import (
+    get_batch_trace_chain,
+    analyze_by_raw_material,
+    analyze_by_ph_range,
+    analyze_by_filter_count,
+    get_comprehensive_analysis,
+    get_rework_statistics,
+)
 
 __all__ = [
     'get_all_batches',
@@ -63,4 +71,10 @@ __all__ = [
     'trace_dyeing_process',
     'analyze_recipe_stability',
     'get_recipe_recommendation',
+    'get_batch_trace_chain',
+    'analyze_by_raw_material',
+    'analyze_by_ph_range',
+    'analyze_by_filter_count',
+    'get_comprehensive_analysis',
+    'get_rework_statistics',
 ]

@@ -9,6 +9,7 @@ from api.services import (
     run_full_analysis,
     get_all_warnings,
     recommend_batches_for_process,
+    get_batch_trace_chain,
 )
 from api.utils import (
     BatchCreate,
@@ -105,4 +106,11 @@ def recommend_batches_route():
         fabric_type=fabric_type,
         min_volume=min_volume
     )
+    return jsonify(result)
+
+@bp.route('/<batch_id>/trace', methods=['GET'])
+def get_batch_trace_route(batch_id):
+    result = get_batch_trace_chain(batch_id)
+    if not result:
+        return jsonify({'error': '批次不存在', 'code': 404}), 404
     return jsonify(result)
