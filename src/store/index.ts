@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AshWaterBatch, ApiConfig, ApiError } from '@/types';
+import type { AshWaterBatch, ApiConfig, ApiError, AllWarningsResult, AnalysisResult } from '@/types';
 import { apiClient } from '@/lib/api';
 
 interface AppState {
@@ -8,9 +8,10 @@ interface AppState {
   config: ApiConfig | null;
   loading: boolean;
   error: ApiError | null;
+  warnings: AllWarningsResult | null;
 
   loadConfig: () => Promise<void>;
-  loadBatches: (status?: string, search?: string) => Promise<void>;
+  loadBatches: (status?: string, search?: string, hasWarning?: boolean) => Promise<void>;
   loadBatch: (id: string) => Promise<void>;
   selectBatch: (batch: AshWaterBatch | null) => void;
   createBatch: (data: any) => Promise<AshWaterBatch>;
@@ -19,6 +20,9 @@ interface AppState {
   addPhRecord: (batchId: string, data: any) => Promise<void>;
   addFilterRecord: (batchId: string, data: any) => Promise<void>;
   addUsageRecord: (batchId: string, data: any) => Promise<void>;
+  loadWarnings: () => Promise<void>;
+  refreshWarnings: () => Promise<void>;
+  analyzeBatch: (batchId: string) => Promise<AnalysisResult>;
   clearError: () => void;
 }
 
@@ -28,6 +32,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   config: null,
   loading: false,
   error: null,
+  warnings: null,
 
   loadConfig: async () => {
     try {
@@ -38,10 +43,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  loadBatches: async (status?: string, search?: string) => {
+  loadBatches: async (status?: string, search?: string, hasWarning?: boolean) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiClient.batches.list(status, search);
+      const response = await apiClient.batches.list(status, search, hasWarning);
       set({ batches: response.data, loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
@@ -115,6 +120,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await apiClient.phRecords.create(batchId, data);
       await get().loadBatch(batchId);
       await get().loadBatches();
+      await get().loadWarnings();
       set({ loading: false });
     } catch (error) {
       set({ error: error as ApiError, loading: false });
@@ -142,6 +148,46 @@ export const useAppStore = create<AppState>((set, get) => ({
       await get().loadBatch(batchId);
       await get().loadBatches();
       set({ loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  loadWarnings: async () => {
+    try {
+      const response = await apiClient.batches.warnings();
+      set({ warnings: response.data });
+    } catch (error) {
+      set({ error: error as ApiError });
+    }
+  },
+
+  refreshWarnings: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.batches.refreshWarnings();
+      set({ warnings: response.data, loading: false });
+      await get().loadBatches();
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  analyzeBatch: async (batchId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.batches.analyze(batchId);
+      set((state) => ({
+        selectedBatch:
+          state.selectedBatch?.id === batchId ? response.data.batch : state.selectedBatch,
+        batches: state.batches.map((b) =>
+          b.id === batchId ? response.data.batch : b
+        ),
+        loading: false,
+      }));
+      return response.data;
     } catch (error) {
       set({ error: error as ApiError, loading: false });
       throw error;

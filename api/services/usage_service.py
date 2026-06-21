@@ -14,6 +14,9 @@ def add_usage_record(batch_id, data):
     if batch.status == 'exhausted':
         raise BusinessRuleError('该批次已用尽，不能继续登记使用', 'exhausted')
     
+    if batch.usage_restricted:
+        raise BusinessRuleError('该批次因PH异常已被限制使用，请处理后再使用', 'usage_restricted')
+    
     if not batch.is_applicable:
         raise BusinessRuleError('该批次当前不适用，请检查PH值', 'not_applicable')
     

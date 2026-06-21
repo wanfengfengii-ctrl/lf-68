@@ -17,6 +17,7 @@ export default function StatusBadge({ status, className = '', size = 'md' }: Sta
     available: '✅',
     not_applicable: '⚠️',
     exhausted: '📦',
+    warning: '🚨',
   };
 
   const sizeClasses: Record<string, string> = {

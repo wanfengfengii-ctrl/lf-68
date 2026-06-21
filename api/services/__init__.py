@@ -12,6 +12,13 @@ from .batch_service import (
 from .ph_service import get_ph_records, add_ph_record
 from .filter_service import get_filter_records, add_filter_record
 from .usage_service import get_usage_records, add_usage_record
+from .analysis_service import (
+    analyze_ph_trend,
+    detect_warnings,
+    recommend_processes,
+    run_full_analysis,
+    get_all_warnings,
+)
 
 __all__ = [
     'get_all_batches',
@@ -28,5 +35,10 @@ __all__ = [
     'get_filter_records',
     'add_filter_record',
     'get_usage_records',
-    'add_usage_record'
+    'add_usage_record',
+    'analyze_ph_trend',
+    'detect_warnings',
+    'recommend_processes',
+    'run_full_analysis',
+    'get_all_warnings',
 ]

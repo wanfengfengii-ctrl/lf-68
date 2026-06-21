@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, Info, Droplets, Filter } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Info, Droplets, Filter, AlertTriangle, Activity, RefreshCw, Zap } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -17,7 +17,7 @@ import { useAppStore } from '@/store';
 import { apiClient, formatDateTime, formatDate } from '@/lib/api';
 import StatusBadge from '@/components/StatusBadge';
 import PhIndicator from '@/components/PhIndicator';
-import type { PhRecord, FilterRecord, UsageRecord } from '@/types';
+import type { PhRecord, FilterRecord, UsageRecord, TrendAnalysis, WarningItem, AnalysisResult } from '@/types';
 
 ChartJS.register(
   CategoryScale,
@@ -37,15 +37,20 @@ export default function PhCurve() {
   const config = useAppStore((state) => state.config);
   const loading = useAppStore((state) => state.loading);
   const loadBatch = useAppStore((state) => state.loadBatch);
+  const analyzeBatch = useAppStore((state) => state.analyzeBatch);
   const [phRecords, setPhRecords] = useState<PhRecord[]>([]);
   const [filterRecords, setFilterRecords] = useState<FilterRecord[]>([]);
   const [usageRecords, setUsageRecords] = useState<UsageRecord[]>([]);
   const [showAnnotations, setShowAnnotations] = useState(true);
+  const [showWarnings, setShowWarnings] = useState(true);
+  const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     if (id) {
       loadBatch(id);
       loadRecords(id);
+      loadAnalysis(id);
     }
   }, [id, loadBatch]);
 
@@ -63,6 +68,26 @@ export default function PhCurve() {
       setUsageRecords(usageRes.data);
     } catch (err) {
       console.error('加载记录失败:', err);
+    }
+  };
+
+  const loadAnalysis = async (batchId: string) => {
+    try {
+      const res = await apiClient.batches.analyze(batchId);
+      setAnalysis(res.data);
+    } catch (err) {
+      console.error('加载分析数据失败:', err);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!id) return;
+    setAnalyzing(true);
+    try {
+      const res = await analyzeBatch(id);
+      setAnalysis(res);
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -88,8 +113,22 @@ export default function PhCurve() {
     );
   }
 
+  const trendAnalysis = analysis?.trendAnalysis;
+  const warnings = analysis?.warnings?.list || [];
+
   const labels = phRecords.map((record) => formatDateTime(record.measuredAt));
   const phValues = phRecords.map((record) => record.phValue);
+
+  const pointStyles = phRecords.map((record, idx) => {
+    const hasWarning = warnings.some((w) => {
+      const wTime = new Date(w.timestamp || 0).getTime();
+      const rTime = new Date(record.measuredAt).getTime();
+      return Math.abs(wTime - rTime) < 1000 * 60 * 60 * 6;
+    });
+    if (hasWarning) return { style: 'triangle', color: '#ef4444' };
+    if (record.phValue >= 8.5 && record.phValue <= 12.5) return { style: 'circle', color: '#22c55e' };
+    return { style: 'circle', color: '#ef4444' };
+  });
 
   const chartData = {
     labels,
@@ -98,16 +137,21 @@ export default function PhCurve() {
         label: 'PH值',
         data: phValues,
         borderColor: '#6366f1',
-        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        backgroundColor: (context: any) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+          gradient.addColorStop(0, 'rgba(99, 102, 241, 0.3)');
+          gradient.addColorStop(1, 'rgba(99, 102, 241, 0.02)');
+          return gradient;
+        },
         fill: true,
         tension: 0.3,
-        pointBackgroundColor: phValues.map((ph) =>
-          ph >= 8.5 && ph <= 12.5 ? '#22c55e' : '#ef4444'
-        ),
+        pointBackgroundColor: pointStyles.map((p) => p.color),
         pointBorderColor: '#fff',
         pointBorderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
+        pointRadius: phRecords.map((r, idx) => pointStyles[idx].style === 'triangle' ? 10 : 6),
+        pointStyle: pointStyles.map((p) => p.style),
+        pointHoverRadius: 10,
         borderWidth: 3,
       },
       {
@@ -187,6 +231,21 @@ export default function PhCurve() {
             }
             return label;
           },
+          afterLabel: (context: any) => {
+            if (context.dataset.label !== 'PH值') return '';
+            const idx = context.dataIndex;
+            const record = phRecords[idx];
+            if (!record) return '';
+            const nearbyWarnings = warnings.filter((w) => {
+              const wTime = new Date(w.timestamp || 0).getTime();
+              const rTime = new Date(record.measuredAt).getTime();
+              return Math.abs(wTime - rTime) < 1000 * 60 * 60 * 6;
+            });
+            if (nearbyWarnings.length > 0) {
+              return nearbyWarnings.map((w) => `⚠ ${w.typeName}: ${w.message}`);
+            }
+            return '';
+          },
         },
       },
     },
@@ -243,17 +302,29 @@ export default function PhCurve() {
   const totalUsed = usageRecords.reduce((sum, r) => sum + r.volumeUsed, 0);
   const remaining = selectedBatch.waterVolume - totalUsed;
 
-  const getTrend = () => {
-    if (phRecords.length < 2) return { direction: 'stable', change: 0 };
-    const first = phRecords[0].phValue;
-    const last = phRecords[phRecords.length - 1].phValue;
-    const change = last - first;
-    if (Math.abs(change) < 0.3) return { direction: 'stable', change };
-    if (change > 0) return { direction: 'rising', change };
-    return { direction: 'falling', change };
+  const getTrendIcon = (trend?: string) => {
+    if (trend === 'rising') return <TrendingUp className="w-4 h-4" />;
+    if (trend === 'falling') return <TrendingDown className="w-4 h-4" />;
+    return <Minus className="w-4 h-4" />;
   };
 
-  const trend = getTrend();
+  const getTrendClass = (trend?: string) => {
+    if (trend === 'rising') return 'trend-rising';
+    if (trend === 'falling') return 'trend-falling';
+    return 'trend-stable';
+  };
+
+  const getWarningLevelClass = (level?: string) => {
+    if (level === 'high') return 'warning-level-high';
+    if (level === 'medium') return 'warning-level-medium';
+    if (level === 'low') return 'warning-level-low';
+    return '';
+  };
+
+  const getStatVolatility = () => {
+    if (!trendAnalysis?.volatility) return 0;
+    return trendAnalysis.volatility;
+  };
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -262,16 +333,51 @@ export default function PhCurve() {
           <ArrowLeft className="w-4 h-4" />
           返回详情
         </button>
-        <button
-          onClick={() => setShowAnnotations(!showAnnotations)}
-          className="btn btn-outline text-sm"
-        >
-          <Info className="w-4 h-4" />
-          {showAnnotations ? '隐藏注释' : '显示注释'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowWarnings(!showWarnings)}
+            className="btn btn-outline text-sm"
+          >
+            <AlertTriangle className="w-4 h-4" />
+            {showWarnings ? '隐藏预警标记' : '显示预警标记'}
+          </button>
+          <button
+            onClick={() => setShowAnnotations(!showAnnotations)}
+            className="btn btn-outline text-sm"
+          >
+            <Info className="w-4 h-4" />
+            {showAnnotations ? '隐藏注释' : '显示注释'}
+          </button>
+          <button
+            onClick={handleAnalyze}
+            disabled={analyzing}
+            className="btn btn-primary text-sm"
+          >
+            <RefreshCw className={`w-4 h-4 ${analyzing ? 'animate-spin' : ''}`} />
+            {analyzing ? '分析中...' : '智能分析'}
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {selectedBatch.hasWarning && (
+        <div className={`warning-banner ${
+          selectedBatch.warningLevel === 'high'
+            ? 'bg-red-50 border-red-300 text-red-800'
+            : selectedBatch.warningLevel === 'medium'
+            ? 'bg-yellow-50 border-yellow-300 text-yellow-800'
+            : 'bg-blue-50 border-blue-300 text-blue-800'
+        }`}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 animate-pulse-slow" />
+            <span className="font-medium">
+              检测到{analysis?.warnings?.list.length || 0}个质量预警
+              {selectedBatch.usageRestricted && ' · 已限制使用'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <div className="card">
           <div className="card-body text-center">
             <PhIndicator ph={selectedBatch.currentPh} size="lg" showLabel={false} />
@@ -286,36 +392,63 @@ export default function PhCurve() {
         </div>
         <div className="card">
           <div className="card-body text-center">
-            <div className="flex items-center justify-center gap-2">
-              {trend.direction === 'rising' && (
-                <TrendingUp className="w-6 h-6 text-red-500" />
-              )}
-              {trend.direction === 'falling' && (
-                <TrendingUp className="w-6 h-6 text-blue-500 rotate-180" />
-              )}
-              {trend.direction === 'stable' && (
-                <TrendingUp className="w-6 h-6 text-green-500" />
-              )}
-              <p
-                className={`text-2xl font-bold ${
-                  trend.direction === 'rising'
-                    ? 'text-red-500'
-                    : trend.direction === 'falling'
-                    ? 'text-blue-500'
-                    : 'text-green-500'
-                }`}
-              >
-                {trend.change > 0 ? '+' : ''}
-                {trend.change.toFixed(2)}
-              </p>
-            </div>
-            <p className="text-sm text-earth-600 mt-2">
-              {trend.direction === 'rising'
-                ? 'PH上升'
-                : trend.direction === 'falling'
-                ? 'PH下降'
-                : 'PH稳定'}
-            </p>
+            {trendAnalysis ? (
+              <>
+                <div className={`inline-flex items-center gap-2 trend-indicator ${getTrendClass(trendAnalysis.trend)}`}>
+                  {getTrendIcon(trendAnalysis.trend)}
+                  <p className="text-2xl font-bold">
+                    {trendAnalysis.totalChange > 0 ? '+' : ''}
+                    {trendAnalysis.totalChange.toFixed(2)}
+                  </p>
+                </div>
+                <p className="text-sm text-earth-600 mt-2">{trendAnalysis.trendName}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-earth-400">--</p>
+                <p className="text-sm text-earth-600 mt-2">趋势</p>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-body text-center">
+            {trendAnalysis ? (
+              <>
+                <p className="text-2xl font-bold text-purple-600">
+                  {trendAnalysis.changeRate >= 0 ? '+' : ''}
+                  {trendAnalysis.changeRate.toFixed(3)}
+                </p>
+                <p className="text-sm text-earth-600 mt-2">变化速率/时</p>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-earth-400">--</p>
+                <p className="text-sm text-earth-600 mt-2">变化速率</p>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="card">
+          <div className="card-body text-center">
+            {trendAnalysis ? (
+              <>
+                <div className="flex items-center justify-center gap-1">
+                  <Activity className="w-5 h-5 text-amber-600" />
+                  <p className={`text-2xl font-bold ${
+                    getStatVolatility() > 0.5 ? 'text-red-600' : getStatVolatility() > 0.3 ? 'text-amber-600' : 'text-green-600'
+                  }`}>
+                    {getStatVolatility().toFixed(2)}
+                  </p>
+                </div>
+                <p className="text-sm text-earth-600 mt-2">波动指数</p>
+              </>
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-earth-400">--</p>
+                <p className="text-sm text-earth-600 mt-2">波动指数</p>
+              </>
+            )}
           </div>
         </div>
         <div className="card">
@@ -327,6 +460,47 @@ export default function PhCurve() {
           </div>
         </div>
       </div>
+
+      {warnings.length > 0 && showWarnings && (
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-serif font-bold flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                关联预警 ({warnings.length})
+              </h2>
+            </div>
+          </div>
+          <div className="card-body">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {warnings.map((warning) => (
+                <div
+                  key={warning.type}
+                  className={`warning-card ${getWarningLevelClass(warning.level)}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        <h5 className="font-bold">{warning.typeName}</h5>
+                      </div>
+                      <p className="text-sm mt-1 opacity-80">{warning.message}</p>
+                    </div>
+                    <span className="text-xs font-medium whitespace-nowrap">
+                      {formatDateTime(warning.timestamp)}
+                    </span>
+                  </div>
+                  {warning.advice && (
+                    <p className="text-xs mt-2 p-2 bg-black/5 rounded">
+                      💡 {warning.advice}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="card-header">
@@ -344,6 +518,10 @@ export default function PhCurve() {
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <span>不适用</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-3 h-3 text-red-500" />
+                <span>预警点</span>
               </div>
             </div>
           </div>
@@ -421,7 +599,7 @@ export default function PhCurve() {
             <h2 className="text-lg font-serif font-bold">统计分析</h2>
           </div>
           <div className="card-body">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
               <div className="p-4 bg-parchment-100 rounded-lg">
                 <p className="text-sm text-earth-500">PH最小值</p>
                 <p className="text-2xl font-bold text-blue-600 mt-1">
@@ -462,7 +640,59 @@ export default function PhCurve() {
                   天
                 </p>
               </div>
+              <div className="p-4 bg-parchment-100 rounded-lg">
+                <p className="text-sm text-earth-500">连续异常</p>
+                <p className={`text-2xl font-bold mt-1 ${
+                  (selectedBatch.consecutiveAbnormalCount || 0) >= 3 ? 'text-red-600' : (selectedBatch.consecutiveAbnormalCount || 0) >= 1 ? 'text-amber-600' : 'text-green-600'
+                }`}>
+                  {selectedBatch.consecutiveAbnormalCount || 0}
+                  次
+                </p>
+              </div>
             </div>
+
+            {trendAnalysis && (
+              <div className="mt-6 p-4 vintage-border bg-parchment-200/30">
+                <h3 className="font-serif font-bold text-lg mb-4">趋势深度分析</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-center">
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-xs text-earth-500">趋势状态</p>
+                    <div className={`mt-1 inline-flex items-center gap-2 trend-indicator ${getTrendClass(trendAnalysis.trend)}`}>
+                      {getTrendIcon(trendAnalysis.trend)}
+                      <span className="font-bold">{trendAnalysis.trendName}</span>
+                    </div>
+                  </div>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-xs text-earth-500">累计变化</p>
+                    <p className={`text-xl font-bold mt-1 ${
+                      trendAnalysis.totalChange > 0 ? 'text-red-600' : trendAnalysis.totalChange < 0 ? 'text-blue-600' : 'text-earth-600'
+                    }`}>
+                      {trendAnalysis.totalChange > 0 ? '+' : ''}{trendAnalysis.totalChange.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-xs text-earth-500">变化速率</p>
+                    <p className="text-xl font-bold mt-1 text-purple-600">
+                      {trendAnalysis.changeRate >= 0 ? '+' : ''}{trendAnalysis.changeRate.toFixed(3)}/h
+                    </p>
+                  </div>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-xs text-earth-500">波动指数</p>
+                    <p className={`text-xl font-bold mt-1 ${
+                      trendAnalysis.volatility > 0.5 ? 'text-red-600' : trendAnalysis.volatility > 0.3 ? 'text-amber-600' : 'text-green-600'
+                    }`}>
+                      {trendAnalysis.volatility.toFixed(2)}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-white rounded-lg">
+                    <p className="text-xs text-earth-500">平均PH</p>
+                    <p className="text-xl font-bold mt-1 text-indigo-600">
+                      {trendAnalysis.avgPh.toFixed(1)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -484,38 +714,56 @@ export default function PhCurve() {
                     <th>检测时间</th>
                     <th>检测人</th>
                     <th>状态</th>
+                    <th>预警</th>
                     <th>备注</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {phRecords.map((record, idx) => (
-                    <tr key={record.id}>
-                      <td className="font-medium text-earth-500">#{idx + 1}</td>
-                      <td>
-                        <span
-                          className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm"
-                          style={{
-                            backgroundColor:
-                              record.phValue >= 8.5 && record.phValue <= 12.5
-                                ? '#22c55e'
-                                : '#ef4444',
-                          }}
-                        >
-                          {record.phValue.toFixed(1)}
-                        </span>
-                      </td>
-                      <td>{formatDateTime(record.measuredAt)}</td>
-                      <td>{record.measuredBy || '-'}</td>
-                      <td>
-                        {record.phValue >= 8.5 && record.phValue <= 12.5 ? (
-                          <span className="badge bg-green-100 text-green-800">适用</span>
-                        ) : (
-                          <span className="badge bg-red-100 text-red-800">不适用</span>
-                        )}
-                      </td>
-                      <td className="text-earth-600">{record.notes || '-'}</td>
-                    </tr>
-                  ))}
+                  {phRecords.map((record, idx) => {
+                    const hasWarning = warnings.some((w) => {
+                      const wTime = new Date(w.timestamp || 0).getTime();
+                      const rTime = new Date(record.measuredAt).getTime();
+                      return Math.abs(wTime - rTime) < 1000 * 60 * 60 * 6;
+                    });
+                    return (
+                      <tr key={record.id}>
+                        <td className="font-medium text-earth-500">#{idx + 1}</td>
+                        <td>
+                          <span
+                            className="inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-bold text-sm"
+                            style={{
+                              backgroundColor:
+                                record.phValue >= 8.5 && record.phValue <= 12.5
+                                  ? '#22c55e'
+                                  : '#ef4444',
+                            }}
+                          >
+                            {record.phValue.toFixed(1)}
+                          </span>
+                        </td>
+                        <td>{formatDateTime(record.measuredAt)}</td>
+                        <td>{record.measuredBy || '-'}</td>
+                        <td>
+                          {record.phValue >= 8.5 && record.phValue <= 12.5 ? (
+                            <span className="badge bg-green-100 text-green-800">适用</span>
+                          ) : (
+                            <span className="badge bg-red-100 text-red-800">不适用</span>
+                          )}
+                        </td>
+                        <td>
+                          {hasWarning ? (
+                            <span className="badge bg-red-100 text-red-800 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              预警
+                            </span>
+                          ) : (
+                            <span className="badge bg-gray-100 text-gray-600">正常</span>
+                          )}
+                        </td>
+                        <td className="text-earth-600">{record.notes || '-'}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

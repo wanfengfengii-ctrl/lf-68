@@ -5,7 +5,9 @@ from api.services import (
     create_batch,
     update_batch,
     delete_batch,
-    get_batch_applicability
+    get_batch_applicability,
+    run_full_analysis,
+    get_all_warnings,
 )
 from api.utils import (
     BatchCreate,
@@ -19,7 +21,13 @@ bp = Blueprint('batches', __name__)
 def list_batches():
     status = request.args.get('status')
     search = request.args.get('search')
+    has_warning = request.args.get('hasWarning')
     batches = get_all_batches(status=status, search=search)
+    
+    if has_warning is not None:
+        warning_flag = has_warning.lower() == 'true'
+        batches = [b for b in batches if b.get('hasWarning', False) == warning_flag]
+    
     return jsonify(batches)
 
 @bp.route('/<batch_id>', methods=['GET'])
@@ -54,3 +62,26 @@ def delete_batch_route(batch_id):
 def get_applicability_route(batch_id):
     applicability = get_batch_applicability(batch_id)
     return jsonify(applicability)
+
+@bp.route('/<batch_id>/analyze', methods=['POST'])
+def analyze_batch_route(batch_id):
+    result = run_full_analysis(batch_id)
+    return jsonify(result)
+
+@bp.route('/warnings', methods=['GET'])
+def get_warnings_route():
+    result = get_all_warnings()
+    return jsonify(result)
+
+@bp.route('/warnings/refresh', methods=['POST'])
+def refresh_warnings_route():
+    from api.models import AshWaterBatch
+    batches = AshWaterBatch.query.all()
+    for batch in batches:
+        try:
+            run_full_analysis(batch.id)
+        except Exception as e:
+            pass
+    
+    result = get_all_warnings()
+    return jsonify(result)

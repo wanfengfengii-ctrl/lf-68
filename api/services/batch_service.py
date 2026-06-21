@@ -26,6 +26,12 @@ def determine_status(batch):
     if total_used >= batch.water_volume * 0.95:
         return 'exhausted'
     
+    if getattr(batch, 'usage_restricted', False):
+        return 'not_applicable'
+    
+    if getattr(batch, 'has_warning', False) and getattr(batch, 'warning_level', None) == 'high':
+        return 'warning'
+    
     if not batch.is_applicable:
         return 'not_applicable'
     
@@ -129,17 +135,23 @@ def delete_batch(batch_id):
     db.session.commit()
 
 def get_batch_applicability(batch_id):
-    batch = get_batch_by_id(batch_id)
+    from api.services.analysis_service import run_full_analysis
     
-    if batch.current_ph is None:
+    analysis_result = run_full_analysis(batch_id)
+    batch = analysis_result['batch']
+    
+    if batch['currentPh'] is None:
         return {
             'currentPh': None,
             'isApplicable': False,
             'applicableProcesses': [],
-            'message': '尚未检测PH值'
+            'message': '尚未检测PH值',
+            'warnings': analysis_result['warnings'],
+            'recommendations': analysis_result['recommendations'],
+            'trendAnalysis': analysis_result['trendAnalysis'],
         }
     
-    ph = batch.current_ph
+    ph = batch['currentPh']
     is_applicable, applicable_processes = get_applicability(ph)
     
     process_details = []
@@ -161,5 +173,8 @@ def get_batch_applicability(batch_id):
         },
         'applicableProcesses': applicable_processes,
         'processDetails': process_details,
-        'status': Config.STATUS_NAMES.get(batch.status, batch.status)
+        'status': Config.STATUS_NAMES.get(batch['status'], batch['status']),
+        'warnings': analysis_result['warnings'],
+        'recommendations': analysis_result['recommendations'],
+        'trendAnalysis': analysis_result['trendAnalysis'],
     }

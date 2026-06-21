@@ -10,7 +10,9 @@ import type {
   FilterRecordCreateForm,
   UsageRecordCreateForm,
   ApiConfig,
-  ApiError
+  ApiError,
+  AnalysisResult,
+  AllWarningsResult,
 } from '@/types';
 
 const api = axios.create({
@@ -37,8 +39,8 @@ export const apiClient = {
   config: () => api.get<ApiConfig>('/config'),
 
   batches: {
-    list: (status?: string, search?: string) =>
-      api.get<AshWaterBatch[]>('/batches', { params: { status, search } }),
+    list: (status?: string, search?: string, hasWarning?: boolean) =>
+      api.get<AshWaterBatch[]>('/batches', { params: { status, search, hasWarning } }),
     get: (id: string) => api.get<AshWaterBatch>(`/batches/${id}`),
     create: (data: BatchCreateForm) => api.post<AshWaterBatch>('/batches', data),
     update: (id: string, data: Partial<BatchCreateForm> & { status?: string }) =>
@@ -46,6 +48,12 @@ export const apiClient = {
     delete: (id: string) => api.delete(`/batches/${id}`),
     applicability: (id: string) =>
       api.get<ApplicabilityInfo>(`/batches/${id}/applicability`),
+    analyze: (id: string) =>
+      api.post<AnalysisResult>(`/batches/${id}/analyze`),
+    warnings: () =>
+      api.get<AllWarningsResult>('/batches/warnings'),
+    refreshWarnings: () =>
+      api.post<AllWarningsResult>('/batches/warnings/refresh'),
   },
 
   phRecords: {

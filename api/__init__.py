@@ -32,7 +32,10 @@ def create_app(config_class=Config):
             'applicableRange': {
                 'min': Config.APPLICABLE_PH_MIN,
                 'max': Config.APPLICABLE_PH_MAX
-            }
+            },
+            'warningConfig': Config.WARNING_CONFIG,
+            'warningTypes': Config.WARNING_TYPES,
+            'warningLevels': Config.WARNING_LEVELS,
         }
     
     app.register_error_handler(APIError, handle_api_error)
