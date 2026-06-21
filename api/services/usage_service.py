@@ -2,6 +2,7 @@ from datetime import datetime
 from api.models import db, UsageRecord
 from api.utils import NotFoundError, BusinessRuleError
 from api.services.batch_service import get_batch_by_id, determine_status, generate_id
+from api.services.analysis_service import run_full_analysis
 
 def get_usage_records(batch_id):
     batch = get_batch_by_id(batch_id)
@@ -39,14 +40,18 @@ def add_usage_record(batch_id, data):
     db.session.add(record)
     db.session.flush()
     
+    db.session.refresh(batch)
+    
     batch.updated_at = datetime.now()
     
-    new_total_used = total_used + data.volumeUsed
-    if new_total_used >= batch.water_volume * 0.99:
+    new_total_used = sum(ur.volume_used for ur in batch.usage_records)
+    if new_total_used >= batch.water_volume * 0.95:
         batch.status = 'exhausted'
     else:
         batch.status = determine_status(batch)
     
     db.session.commit()
+    
+    run_full_analysis(batch_id)
     
     return record.to_dict()

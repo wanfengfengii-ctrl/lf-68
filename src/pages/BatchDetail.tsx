@@ -98,17 +98,26 @@ export default function BatchDetail() {
 
   const handlePhRecordAdded = () => {
     setShowPhModal(false);
-    loadRecords(id);
+    if (id) {
+      loadBatch(id);
+      loadRecords(id);
+    }
   };
 
   const handleFilterRecordAdded = () => {
     setShowFilterModal(false);
-    loadRecords(id);
+    if (id) {
+      loadBatch(id);
+      loadRecords(id);
+    }
   };
 
   const handleUsageRecordAdded = () => {
     setShowUsageModal(false);
-    loadRecords(id);
+    if (id) {
+      loadBatch(id);
+      loadRecords(id);
+    }
   };
 
   if (loading && !selectedBatch) {
