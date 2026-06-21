@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FlaskConical } from 'lucide-react';
 import Modal from './Modal';
 import { useAppStore } from '@/store';
@@ -25,6 +25,19 @@ export default function PhRecordModal({ isOpen, onClose, onSuccess, batchId }: P
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm({
+        phValue: 0,
+        measuredAt: new Date().toISOString().slice(0, 16),
+        measuredBy: '',
+        notes: '',
+      });
+      setErrors({});
+      setSubmitError(null);
+    }
+  }, [isOpen]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Filter } from 'lucide-react';
 import Modal from './Modal';
 import { useAppStore } from '@/store';
@@ -26,6 +26,19 @@ export default function FilterRecordModal({ isOpen, onClose, onSuccess, batchId,
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm({
+        filterDate: new Date().toISOString().slice(0, 16),
+        filterMethod: '纱布过滤',
+        filterCount: (batch?.filterCount || 0) + 1,
+        notes: '',
+      });
+      setErrors({});
+      setSubmitError(null);
+    }
+  }, [isOpen, batch?.filterCount]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};

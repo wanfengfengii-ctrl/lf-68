@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Droplets } from 'lucide-react';
 import Modal from './Modal';
 import { useAppStore } from '@/store';
@@ -29,6 +29,20 @@ export default function UsageRecordModal({ isOpen, onClose, onSuccess, batchId, 
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setForm({
+        usageDate: new Date().toISOString().slice(0, 16),
+        process: 'dyeing',
+        volumeUsed: 0,
+        usedBy: '',
+        notes: '',
+      });
+      setErrors({});
+      setSubmitError(null);
+    }
+  }, [isOpen]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
