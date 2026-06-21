@@ -615,12 +615,20 @@ export default function BatchDetail() {
       <PhRecordModal
         isOpen={showPhModal}
         onClose={() => setShowPhModal(false)}
+        onSuccess={() => {
+          loadBatch(id);
+          loadRecords(id);
+        }}
         batchId={id}
       />
 
       <FilterRecordModal
         isOpen={showFilterModal}
         onClose={() => setShowFilterModal(false)}
+        onSuccess={() => {
+          loadBatch(id);
+          loadRecords(id);
+        }}
         batchId={id}
         batch={selectedBatch}
       />
@@ -628,6 +636,10 @@ export default function BatchDetail() {
       <UsageRecordModal
         isOpen={showUsageModal}
         onClose={() => setShowUsageModal(false)}
+        onSuccess={() => {
+          loadBatch(id);
+          loadRecords(id);
+        }}
         batchId={id}
         batch={selectedBatch}
         remainingVolume={remaining}

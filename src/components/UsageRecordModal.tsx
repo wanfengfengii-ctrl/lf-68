@@ -7,13 +7,14 @@ import type { UsageRecordCreateForm, DyeingProcess, ApiError, AshWaterBatch } fr
 interface UsageRecordModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   batchId: string;
   batch: AshWaterBatch | null;
   remainingVolume?: number;
   totalUsed?: number;
 }
 
-export default function UsageRecordModal({ isOpen, onClose, batchId, batch, remainingVolume, totalUsed }: UsageRecordModalProps) {
+export default function UsageRecordModal({ isOpen, onClose, onSuccess, batchId, batch, remainingVolume, totalUsed }: UsageRecordModalProps) {
   const addUsageRecord = useAppStore((state) => state.addUsageRecord);
   const config = useAppStore((state) => state.config);
   const loading = useAppStore((state) => state.loading);
@@ -59,6 +60,7 @@ export default function UsageRecordModal({ isOpen, onClose, batchId, batch, rema
     try {
       await addUsageRecord(batchId, form);
       onClose();
+      onSuccess?.();
     } catch (err) {
       const apiError = err as ApiError;
       setSubmitError(apiError.error || '提交失败，请重试');

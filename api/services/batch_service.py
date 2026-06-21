@@ -79,7 +79,7 @@ def create_batch(data):
         current_ph=data.currentPh,
         filter_count=0,
         status='soaking',
-        is_applicable=True,
+        is_applicable=False,
         applicable_processes=[]
     )
     

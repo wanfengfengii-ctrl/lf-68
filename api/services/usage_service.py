@@ -33,10 +33,17 @@ def add_usage_record(batch_id, data):
         notes=data.notes
     )
     
-    batch.updated_at = datetime.now()
-    batch.status = determine_status(batch)
-    
     db.session.add(record)
+    db.session.flush()
+    
+    batch.updated_at = datetime.now()
+    
+    new_total_used = total_used + data.volumeUsed
+    if new_total_used >= batch.water_volume * 0.99:
+        batch.status = 'exhausted'
+    else:
+        batch.status = determine_status(batch)
+    
     db.session.commit()
     
     return record.to_dict()

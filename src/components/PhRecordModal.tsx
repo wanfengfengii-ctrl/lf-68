@@ -8,10 +8,11 @@ import type { ApiError } from '@/types';
 interface PhRecordModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   batchId: string;
 }
 
-export default function PhRecordModal({ isOpen, onClose, batchId }: PhRecordModalProps) {
+export default function PhRecordModal({ isOpen, onClose, onSuccess, batchId }: PhRecordModalProps) {
   const addPhRecord = useAppStore((state) => state.addPhRecord);
   const loading = useAppStore((state) => state.loading);
 
@@ -45,6 +46,7 @@ export default function PhRecordModal({ isOpen, onClose, batchId }: PhRecordModa
     try {
       await addPhRecord(batchId, form);
       onClose();
+      onSuccess?.();
       setForm({
         phValue: 0,
         measuredAt: new Date().toISOString().slice(0, 16),

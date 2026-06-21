@@ -8,11 +8,12 @@ import type { ApiError, AshWaterBatch } from '@/types';
 interface FilterRecordModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
   batchId: string;
   batch: AshWaterBatch | null;
 }
 
-export default function FilterRecordModal({ isOpen, onClose, batchId, batch }: FilterRecordModalProps) {
+export default function FilterRecordModal({ isOpen, onClose, onSuccess, batchId, batch }: FilterRecordModalProps) {
   const addFilterRecord = useAppStore((state) => state.addFilterRecord);
   const loading = useAppStore((state) => state.loading);
 
@@ -50,6 +51,7 @@ export default function FilterRecordModal({ isOpen, onClose, batchId, batch }: F
     try {
       await addFilterRecord(batchId, form);
       onClose();
+      onSuccess?.();
     } catch (err) {
       const apiError = err as ApiError;
       setSubmitError(apiError.error || '提交失败，请重试');
