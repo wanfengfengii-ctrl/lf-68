@@ -4,7 +4,7 @@ export type DyeingProcess = 'scouring' | 'mordanting' | 'dyeing' | 'fixing';
 
 export type PhTrend = 'rising' | 'falling' | 'stable';
 
-export type WarningType = 'consecutive_abnormal' | 'long_time_no_check' | 'ph_rising_rapidly' | 'ph_falling_rapidly' | 'usage_restricted';
+export type WarningType = 'consecutive_abnormal' | 'long_time_no_check' | 'ph_rising_rapidly' | 'ph_falling_rapidly' | 'usage_restricted' | 'excessive_filtering' | 'high_usage_frequency' | 'low_remaining_volume' | 'batch_expiring' | 'needs_recheck';
 
 export type WarningLevel = 'low' | 'medium' | 'high';
 
@@ -372,4 +372,43 @@ export interface ApiConfig {
   dyeMaterials: Record<DyeMaterial, string>;
   fabricTypes: Record<FabricType, string>;
   stabilityLevels: Record<StabilityLevel, string>;
+}
+
+export interface ProcessScoreDetail {
+  score: number;
+  inRange: boolean;
+  reasons: string[];
+  minPh: number;
+  maxPh: number;
+  processName: string;
+}
+
+export interface RecommendedBatchItem {
+  batch: AshWaterBatch;
+  remainingVolume: number;
+  remainingPercent: number;
+  totalUsed: number;
+  usageCount: number;
+  ageDays: number;
+  overallScore: number;
+  finalScore: number;
+  processScores: Record<string, ProcessScoreDetail>;
+  processRecommendation: ProcessScoreDetail | null;
+  trendAnalysis?: TrendAnalysis;
+  warnings: WarningResult;
+  recommendations: RecommendationResult;
+  isRecommended: boolean;
+}
+
+export interface BatchRecommendationResult {
+  process: DyeingProcess | null;
+  processName: string | null;
+  fabricType: FabricType | null;
+  targetPhRange: [number, number] | null;
+  recommended: RecommendedBatchItem[];
+  notRecommended: RecommendedBatchItem[];
+  totalAvailable: number;
+  totalRecommended: number;
+  advice: string[];
+  generatedAt: string;
 }

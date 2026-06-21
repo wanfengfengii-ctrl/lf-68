@@ -19,6 +19,9 @@ import type {
   StabilityAnalysisResult,
   RecipeRecommendationResult,
   TraceGroup,
+  BatchRecommendationResult,
+  DyeingProcess,
+  FabricType,
 } from '@/types';
 
 const api = axios.create({
@@ -60,6 +63,8 @@ export const apiClient = {
       api.get<AllWarningsResult>('/batches/warnings'),
     refreshWarnings: () =>
       api.post<AllWarningsResult>('/batches/warnings/refresh'),
+    recommend: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) =>
+      api.get<BatchRecommendationResult>('/batches/recommend', { params }),
   },
 
   phRecords: {

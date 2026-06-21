@@ -18,6 +18,7 @@ from .analysis_service import (
     recommend_processes,
     run_full_analysis,
     get_all_warnings,
+    recommend_batches_for_process,
 )
 from .dyeing_service import (
     get_dyeing_records,
@@ -52,6 +53,7 @@ __all__ = [
     'recommend_processes',
     'run_full_analysis',
     'get_all_warnings',
+    'recommend_batches_for_process',
     'get_dyeing_records',
     'get_dyeing_record_by_id',
     'get_dyeing_record_detail',

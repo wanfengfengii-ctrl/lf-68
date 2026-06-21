@@ -8,12 +8,14 @@ from api.services import (
     get_batch_applicability,
     run_full_analysis,
     get_all_warnings,
+    recommend_batches_for_process,
 )
 from api.utils import (
     BatchCreate,
     BatchUpdate,
     handle_validation_error
 )
+from api.config import Config
 
 bp = Blueprint('batches', __name__)
 
@@ -84,4 +86,23 @@ def refresh_warnings_route():
             pass
     
     result = get_all_warnings()
+    return jsonify(result)
+
+@bp.route('/recommend', methods=['GET'])
+def recommend_batches_route():
+    process = request.args.get('process')
+    fabric_type = request.args.get('fabricType')
+    min_volume = request.args.get('minVolume', 0, type=float)
+
+    if process and process not in Config.PROCESS_PH_RANGES:
+        return jsonify({
+            'error': f'Invalid process type. Must be one of: {list(Config.PROCESS_PH_RANGES.keys())}',
+            'code': 400
+        }), 400
+
+    result = recommend_batches_for_process(
+        process=process,
+        fabric_type=fabric_type,
+        min_volume=min_volume
+    )
     return jsonify(result)

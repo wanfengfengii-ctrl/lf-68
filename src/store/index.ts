@@ -11,6 +11,9 @@ import type {
   StabilityAnalysisResult,
   RecipeRecommendationResult,
   TraceGroup,
+  BatchRecommendationResult,
+  DyeingProcess,
+  FabricType,
 } from '@/types';
 import { apiClient } from '@/lib/api';
 
@@ -25,6 +28,7 @@ interface AppState {
   stabilityAnalysis: StabilityAnalysisResult | null;
   recipeRecommendation: RecipeRecommendationResult | null;
   traceGroups: TraceGroup[];
+  batchRecommendation: BatchRecommendationResult | null;
 
   loadConfig: () => Promise<void>;
   loadBatches: (status?: string, search?: string, hasWarning?: boolean) => Promise<void>;
@@ -48,6 +52,8 @@ interface AppState {
   analyzeRecipeStability: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
   getRecipeRecommendation: (params: { fabricType: string; targetColor: string; process?: string }) => Promise<void>;
   traceDyeingProcess: (params?: { fabricType?: string; targetColor?: string; process?: string }) => Promise<void>;
+  getBatchRecommendation: (params?: { process?: DyeingProcess; fabricType?: FabricType; minVolume?: number }) => Promise<void>;
+  clearBatchRecommendation: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -61,6 +67,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   stabilityAnalysis: null,
   recipeRecommendation: null,
   traceGroups: [],
+  batchRecommendation: null,
 
   loadConfig: async () => {
     try {
@@ -302,5 +309,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ error: error as ApiError, loading: false });
       throw error;
     }
+  },
+
+  getBatchRecommendation: async (params) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiClient.batches.recommend(params);
+      set({ batchRecommendation: response.data, loading: false });
+    } catch (error) {
+      set({ error: error as ApiError, loading: false });
+      throw error;
+    }
+  },
+
+  clearBatchRecommendation: () => {
+    set({ batchRecommendation: null });
   },
 }));

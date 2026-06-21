@@ -47,6 +47,12 @@ class Config:
         'ph_stable_threshold': 0.3,
         'ph_rapid_change_threshold': 1.0,
         'ph_rapid_change_hours': 24,
+        'excessive_filter_count': 5,
+        'high_usage_frequency_days': 7,
+        'high_usage_frequency_count': 5,
+        'low_remaining_volume_percent': 10,
+        'very_low_remaining_volume_percent': 5,
+        'max_batch_age_days': 30,
     }
 
     WARNING_TYPES = {
@@ -55,6 +61,11 @@ class Config:
         'ph_rising_rapidly': 'PH快速上升',
         'ph_falling_rapidly': 'PH快速下降',
         'usage_restricted': '限制使用',
+        'excessive_filtering': '过滤次数过多',
+        'high_usage_frequency': '使用频率过高',
+        'low_remaining_volume': '剩余量不足',
+        'batch_expiring': '批次即将过期',
+        'needs_recheck': '需要复检',
     }
 
     WARNING_LEVELS = {
